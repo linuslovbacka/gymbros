@@ -1,0 +1,143 @@
+:root {
+  /* Desaturated, earthy, gritty (spec section 3) */
+  --bg: #0d0f12;
+  --bg-2: #15181d;
+  --bg-3: #1e232a;
+  --line: #2c323b;
+  --line-bright: #3b434e;
+  --text: #e9e5dc;
+  --muted: #8b919c;
+  --muted-2: #5d636d;
+
+  --amber: #e8a04b;     /* GRIT + primary */
+  --amber-bright: #ffbd6b;
+  --iron: #7fa6cf;      /* IRON, cold blue */
+  --good: #86b15a;
+  --dead: #cf5b42;
+
+  --radius: 14px;
+  --radius-sm: 9px;
+  --font-display: 'Oswald', 'Arial Narrow', sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--text);
+  background:
+    radial-gradient(120% 80% at 50% -10%, #1a1f26 0%, var(--bg) 55%),
+    var(--bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior: none;
+}
+
+#root {
+  max-width: 520px;
+  margin: 0 auto;
+  position: relative;
+  min-height: 100%;
+}
+
+h1, h2, h3 { font-family: var(--font-display); margin: 0; letter-spacing: 0.04em; }
+
+button { font-family: inherit; cursor: pointer; }
+
+.screen {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: max(20px, env(safe-area-inset-top)) 18px max(20px, env(safe-area-inset-bottom));
+}
+
+/* ─── Buttons ─────────────────────────────────────────────────────────── */
+.btn {
+  border: 1px solid var(--line-bright);
+  background: var(--bg-3);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
+  font-size: 15px;
+  font-weight: 600;
+  transition: transform 0.06s ease, background 0.15s ease, border-color 0.15s ease;
+}
+.btn:active { transform: translateY(1px) scale(0.99); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-primary {
+  background: linear-gradient(180deg, var(--amber-bright), var(--amber));
+  color: #241606;
+  border: none;
+  font-family: var(--font-display);
+  font-size: 20px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  box-shadow: 0 6px 24px rgba(232, 160, 75, 0.25);
+}
+
+.btn-train {
+  width: 100%;
+  padding: 20px;
+  font-size: 26px;
+}
+
+.btn-ghost { background: transparent; }
+
+.btn-block { width: 100%; }
+
+/* ─── Generic layout helpers ──────────────────────────────────────────── */
+.stack { display: flex; flex-direction: column; gap: 12px; }
+.row { display: flex; gap: 10px; }
+.grow { flex: 1; }
+.center { display: flex; align-items: center; justify-content: center; }
+.spacer { flex: 1; }
+.muted { color: var(--muted); }
+.tiny { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted-2); }
+.text-center { text-align: center; }
+
+.panel {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+/* ─── Segmented choice ─────────────────────────────────────────────────── */
+.choice {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.choice-btn {
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 18px 16px;
+  text-align: left;
+  font-size: 17px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.choice-btn.active,
+.choice-btn:hover { border-color: var(--amber); }
+.choice-btn .sub { color: var(--muted); font-weight: 400; font-size: 13px; }
+
+/* ─── Currency chips ───────────────────────────────────────────────────── */
+.chips { display: flex; gap: 10px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid var(--line); border-radius: 999px;
+  padding: 6px 12px; font-weight: 700; font-size: 13px;
+  background: var(--bg-2);
+}
+.chip .dot { width: 9px; height: 9px; border-radius: 999px; }
+.chip.iron { color: var(--iron); } .chip.iron .dot { background: var(--iron); }
+.chip.grit { color: var(--amber); } .chip.grit .dot { background: var(--amber); }
