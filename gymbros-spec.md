@@ -59,9 +59,9 @@ The avatar is the core feedback loop of the entire app — strength in the real 
 The agreed style draws from game-accurate fan art — Dead Space, Mass Effect, Gears of War territory. Grounded, slightly gritty, no cartoon exaggeration.
 
 **Format**
-- Pixel art at roughly 32×64 or 48×96 character resolution, displayed at 3–4× upscale
-- Full body, front-facing idle stance with a slight 3/4 lean
-- No anti-aliasing — hard pixel edges throughout
+- Pixel art at a **locked native 48×72 px per frame**, displayed at 3–4× upscale (canonical box across all tiers/sides/cosmetics — see `gymbros-generation-spec.md` §5)
+- Full body, loose weighted stance with a slight 3/4 turn; head-to-body ratio ~1:7 (realistic-heroic, not chibi)
+- No anti-aliasing — hard chunky pixel edges, flat colour blocks, visible pixels
 
 **Shading**
 - 3–5 tones per colour: dark outline pixel, shadow tone, midtone, highlight, occasional specular dot
@@ -78,8 +78,8 @@ The agreed style draws from game-accurate fan art — Dead Space, Mass Effect, G
 **Background**
 - Flat neutral gray with a faint ground-shadow line. No environment.
 
-### Level 1 reference (already prompted for Nanobanan Pro)
-Skinny young man, plain t-shirt, joggers, beat-up sneakers, slight slouch. Two mirrored versions — Avatar Right facing left (Linus's side), Avatar Left facing right (Oskar's side).
+### Level 1 / Tier 1 reference (the scrawny beginner)
+A youthful young man (late teens / early twenties), scrawny and underdeveloped — narrow shoulders barely wider than the hips, thin straight arms, flat chest, mild forward slouch. Short mid-brown hair (`#3A2510`), minimal non-portrait face. Oversized off-white tee (`#D8D0B8`), baggy olive-grey joggers (`#5A6258`), scuffed brown sneakers (`#282420`). Two mirrored versions — Avatar Right facing left (Linus's side), Avatar Left facing right (Oskar's side). The tier-1 idle/flex animation deliberately pays off with a *flat, unimpressive bicep* and a defeated slump — the joke escalates as the avatar levels up. Full decomposed prompt (style / identity / physique / animation layers) lives in `gymbros-generation-spec.md` §5–§6.
 
 **Reasoning for the style choice:** game-art realism makes the absurdity of later stages land harder. If the avatars looked cartoonish from the start, the late-game escalation ("absolutely unhinged" stage) loses its punch. Starting grounded earns the chaos later.
 

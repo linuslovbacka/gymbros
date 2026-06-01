@@ -1,0 +1,26 @@
+{
+  "name": "gymbros-cosmetic-gen",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Dev-run, approval-gated avatar/cosmetic generation pipeline for Gymbros. Separate from the app runtime; the app only consumes its approved output.",
+  "bin": {
+    "gen": "./index.ts"
+  },
+  "scripts": {
+    "gen": "tsx index.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@google/genai": "^2.7.0",
+    "@imgly/background-removal-node": "^1.4.5",
+    "@supabase/supabase-js": "^2.106.2",
+    "dotenv": "^17.4.2",
+    "sharp": "^0.34.5"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3"
+  }
+}

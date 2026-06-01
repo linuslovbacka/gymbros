@@ -40,7 +40,7 @@ The avatar renders as **one combined sprite per side** (~12 base images: 2 sides
 - *Trade-off accepted:* the "skipped leg day is immediately visible" hook is deferred as a *visual* feature; it still exists in data. A v2 may revisit it via layered upper/lower compositing once consistency is solved.
 
 ### Generated animation via spritesheets
-Each state gets a base pose plus short clips: idle "breathing" (~2–3 frames) and flex/taunt (~2–3 frames), packed into a spritesheet with an atlas.
+Each state gets a base pose plus short clips: an idle "breathing" **loop** and a flex/taunt **one-shot** (the tier-1 reference uses 4 + 4 = 8 frames; treat that as the stretch target and start from the static fallback, adding frames only as long as consistency holds), packed into a spritesheet with an atlas.
 
 - **Consistency technique:** generate frame 0 first, then produce every other frame as a Nanobanan Pro **image-to-image edit conditioned on frame 0**, so the character doesn't drift between frames.
 - **Graceful fallback:** `--frames 1` yields a single static sprite that the app animates with code (transform bob / scale-pop). If generated frames look inconsistent, drop to 1 frame per clip with zero pipeline changes.
@@ -91,19 +91,31 @@ The §10 fire vortex is a **system** progress overlay, not an earned/equipped it
 
 Pulled from `gymbros-spec.md` §3 — the generation prompts must encode these.
 
-- **Reference territory:** game-accurate fan art — Dead Space, Mass Effect, Gears of War. Grounded, slightly gritty, no cartoon exaggeration.
-- **Format:** pixel art ~32×64 or 48×96 character resolution, displayed at 3–4× upscale. Full body, front-facing idle with a slight 3/4 lean. **No anti-aliasing** — hard pixel edges.
-- **Shading:** 3–5 tones per colour (dark outline, shadow, midtone, highlight, occasional specular). Visible material texture variation (fabric vs metal vs leather).
-- **Silhouette:** clean, distinct, confident idle stance with personality.
-- **Palette:** desaturated, earthy — browns, khakis, gunmetal grays, occasional warm amber. **No neon.**
-- **Sides:** mirrored — Avatar Right faces left (Linus), Avatar Left faces right (Oskar).
+- **Reference territory:** low-res AAA-shooter sprite style — Halo, Gears of War, Dead Space. Gritty, cinematic, desaturated, grounded; no cartoon/chibi exaggeration.
+- **Format (canonical, locked):** native **48×72 px per frame**, displayed at 3–4× upscale. Full body, loose weighted stance, slight 3/4 turn. **No anti-aliasing** on the silhouette; flat colour blocks, hard chunky pixel edges, visible individual pixels. NOT smooth, painterly, or high-detail illustration. This frame box is fixed across **all** tiers, sides, and cosmetics so packing/anchoring and on-avatar bakes line up.
+- **Proportions:** head-to-body ratio **1:7**, realistic-heroic. NOT chibi, stumpy, or stocky.
+- **Shading:** max **3 values per material** (base, shadow, highlight). Flat blocks only — no gradients, no blending. Light source upper-left.
+- **Outline:** dark, only on the outer silhouette and major limb separations. Interior detail via value contrast, **not** internal black lines.
+- **Face:** minimal, not a portrait — no detailed eyes/nose/mouth; short hair, flat skin, 1–2 dark pixels for brow shadow. Identical every frame.
+- **Palette:** ~12 muted desaturated colours total — browns, khakis, gunmetal grays, occasional warm amber. **No neon.** Do NOT draw a colour legend/swatches in the image.
+- **Sides:** mirrored — Avatar Right faces left (Linus), Avatar Left faces right (Oskar). Do **not** just horizontally flip a side (it throws the upper-left light to upper-right) — regenerate the mirror with light kept upper-left.
 
 ### Generation-specific conventions
-- **Generate on a flat neutral background** (per §3), then background-remove to a transparent PNG. Never bake an environment.
-- **Consistent canvas + feet anchor:** every cutout is centered on a fixed canvas and anchored by the feet/bounding box so frames and tiers don't jitter when swapped.
+- **The model never lays out the spritesheet.** Generate **one frame at a time** (frame 0, then each subsequent frame as an image-to-image edit conditioned on frame 0 — §6). `sheet.ts` (`sharp`) deterministically packs frames into the strip: one row, even spacing, identical size, shared baseline. Never put "EXACTLY N frames in a row / same baseline" demands in a per-frame prompt — that layout is guaranteed by code, not begged from the model.
+- **Generation background ≠ in-app background.** Generate on a solid, removal-friendly background colour (e.g. magenta/green that contrasts the desaturated palette) so `@imgly` cuts cleanly; a flat grey reads on-brand but sits too close to the t-shirt/sneaker tones and risks eating them. The transparent cutout is what ships; the in-app backdrop is a separate concern.
+- **Consistent canvas + feet anchor:** every cutout is centered on the fixed 48×72 frame box and anchored by the feet/bounding box so frames and tiers don't jitter when swapped.
 - **Standalone cosmetic items:** the same style, item isolated and centered for the grid icon — separate from the on-avatar bake.
 - **Vortex sprites:** neutral/white, currency-agnostic (tinted at runtime).
 - **Late-stage escalation:** the grounded early style is deliberate so the "absolutely unhinged" late tiers land harder.
+
+### Tier 1 reference (the scrawny beginner) — decomposed across prompt layers
+The detailed reference prompt splits across the §6 layers so style + identity + choreography stay reusable while only the physique/clothing changes per tier:
+
+- **base-style.ts (constant):** the Reference / Format / Proportions / Shading / Outline / Palette rules above.
+- **players.ts (per-player identity):** young man, late teens / early twenties, **youthful** soft features (not rugged/older); short mid-brown hair `#3A2510`, flat tan skin; simple head shape, same face every frame.
+- **avatars.ts → tier 1 (physique + starter clothing):** scrawny, underdeveloped — narrow shoulders barely wider than hips, thin straight arms with no muscle, flat narrow chest, mild forward slouch (a weak beginner who's never trained). Oversized off-white tee `#D8D0B8` hanging off the thin frame; baggy olive-grey joggers `#5A6258`; scuffed low brown sneakers `#282420`.
+- **frames.ts (choreography):** *idle clip* (loop) = neutral → chest 1px up / shoulders lift → back toward neutral → head dips 1px. *flex/taunt clip* (one-shot) = raise right arm into a flex → **bicep completely flat, no bulge**, looking at it → other hand points at the unimpressive arm → both arms drop, shoulders slump, head lowers (defeated).
+- **Tier-dependent payoff (IMPORTANT):** the flat-bicep/defeated-slump punchline is **tier-1 only**. The flex choreography must be parameterized per tier so higher tiers pay off with a real bulge and pride. The animation itself carries the progression joke.
 
 ---
 
@@ -113,15 +125,16 @@ Editable source lives in the repo; the CLI resolves the final prompt and **snaps
 
 - `tools/cosmetic-gen/prompts/base-style.ts` — the shared style block (§5).
 - `tools/cosmetic-gen/prompts/players.ts` — per-player base description (Linus / Oskar).
-- `tools/cosmetic-gen/prompts/avatars.ts` — per-tier physique fragments (seeded from the §3 Level 1 reference, expandable to ~6 tiers).
+- `tools/cosmetic-gen/prompts/avatars.ts` — per-tier physique + clothing fragments (tier 1 = the scrawny beginner in §5; expandable to ~6 tiers).
 - `tools/cosmetic-gen/prompts/cosmetics.ts` — per-cosmetic fragment + `slot` / category / rarity, seeded from `gymbros-achievements.md` rewards (crown→head, belt→waist, aura→aura, drone→companion, …).
 - `tools/cosmetic-gen/prompts/effects.ts` — the 5 fire-vortex stage prompts.
+- `tools/cosmetic-gen/prompts/clips.ts` (or `frames.ts` data) — per-clip frame choreography (idle loop, flex/taunt one-shot), with **per-tier** variants for the flex payoff.
 
 **Composition rules:**
-- Avatar base = `base-style + players[player] + avatars[tier] + side`.
+- Avatar base (frame 0) = `base-style + players[player] + avatars[tier] + side`, single frame, no strip/layout instructions.
+- Animation frames (2..n) = **image-to-image** on frame 0 + the clip's per-frame motion description ("same character, same everything, now …"). `sheet.ts` packs them; the prompt never describes the strip.
 - Standalone item = `base-style + cosmetics[slug].fragment + "single item, isolated, centered"`.
 - Loadout bake = **image-to-image** on the current avatar image + appended worn-slot fragments ("same character, wearing …").
-- Animation frames = **image-to-image** on frame 0 + the clip's motion description.
 
 ---
 
@@ -162,6 +175,26 @@ avatars/
 ### Retrieval / rollback
 - `list <subject>` shows all versions; `diff <subject>` compares prompt text across versions; `approve <imageId>` promotes any past version back to current (rollback = re-approve an old row — the asset is still there).
 
+### Atlas (`.sheet.json`) schema — the shared pipeline↔app contract
+One sheet **per clip**, single horizontal row (matches the storage layout: `{clip}.sheet.png` + `{clip}.sheet.json`). This is the exact shape the pipeline writes and the app's `SpriteAnimator` reads; it is also mirrored into `generated_images.atlas` (jsonb). Lock it now so neither side reworks at Phase 8.
+
+```jsonc
+{
+  "clip": "idle",          // "idle" | "flex" (matches generated_images.clip)
+  "frameWidth": 48,         // native px — the locked 48×72 box
+  "frameHeight": 72,
+  "frameCount": 4,
+  "columns": 4,             // == frameCount (single row)
+  "rows": 1,                // always 1 in v1 (one clip per sheet)
+  "fps": 8,                 // playback rate
+  "loop": true,             // idle loops; flex/taunt is a one-shot (false)
+  "anchor": { "x": 24, "y": 72 }, // feet anchor (bottom-centre), for consistent placement across tiers/cosmetics
+  "durations": [125, 125, 125, 125] // optional per-frame ms; omit ⇒ uniform from fps
+}
+```
+
+App-side reconciliation this resolves: `SpriteAnimator.AtlasMeta` becomes **single-clip** (drop the multi-clip `clips[clip].row` model; `rows` is always 1, `columns == frameCount`). Crisp upscale = `image-rendering: pixelated` plus a `background-size` scaled from `frameWidth/frameHeight` to the container — both app-side, fine to wire when real sheets land.
+
 ---
 
 ## 8. Data model (additive to the existing schema)
@@ -171,7 +204,7 @@ The project already has `profiles` (tiers, **equipped gear**, streak/rust, progr
 - **`profiles`** (existing — extend): add `avatar_base_prompt` (per-player description). Tier (single derived render tier) and equipped loadout already live here; the pipeline reads them. Side is derived from the pair.
 - **`cosmetics`** (new, app-facing catalog) — `id`, `slug`, `name`, `slot`, `category`, `rarity`, `achievement_id` (nullable), `description`, `prompt_fragment`, `current_image_id`.
 - **`prompt_versions`** (new, history) — `id`, `kind` ('avatar_tier' | 'cosmetic' | 'loadout_bake' | 'system_effect'), `subject_key`, `version_no`, `prompt_text`, `parent_version_id`, `params` jsonb, `is_current`, `created_at`.
-- **`generated_images`** (new, history) — `id`, `prompt_version_id`, `variant` ('standalone' | 'layer' | 'bake' | 'special' | 'effect' | 'raw' | 'cutout' | 'frame' | 'spritesheet'), `clip` ('idle' | 'flex' | null), `frame_index`, `storage_path`, `width`, `height`, `atlas` jsonb, `is_approved`, `created_at`.
+- **`generated_images`** (new, history) — `id`, `prompt_version_id`, `variant` ('standalone' | 'layer' | 'bake' | 'special' | 'effect' | 'raw' | 'cutout' | 'frame' | 'spritesheet'), `clip` ('idle' | 'flex' | null), `frame_index`, `storage_path`, `width`, `height`, `atlas` jsonb (the per-clip `.sheet.json` schema in §7), `is_approved`, `created_at`.
 - **`avatar_renders`** (new, bake cache) — `id`, `profile_id`, `tier`, `loadout_hash`, `loadout` jsonb, `spritesheet_image_id`, `created_at`. Unique on (`profile_id`, `tier`, `loadout_hash`).
 
 RLS: history/catalog tables are readable by authenticated users; writes happen only via the service-role key in the CLI (and, later, an edge function).
