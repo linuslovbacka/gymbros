@@ -313,6 +313,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     }
 
+    // Strength signals: heaviest working weight (gym weights only climb, so the
+    // current per-exercise weight is the max) and lifetime IRON output.
+    const stateWeights = Object.values(nextExerciseState).map((e) => e.weightKg ?? 0);
+    const entryWeights = input.entries.map((e) => e.weightKg ?? 0);
+    const maxWeightKg = Math.max(0, ...stateWeights, ...entryWeights);
+    const ironLifetime = (p.iron_lifetime ?? 0) + ironEarned;
+
     const accountAgeDays = Math.floor((Date.now() - new Date(p.created_at).getTime()) / DAY_MS);
     const alreadyUnlocked = new Set((p.unlocked_achievements as string[]) ?? []);
     const { unlocked, gritAward, ironAward } = evaluateAchievements({
@@ -328,6 +335,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       partnerTrainedToday,
       bothStreak14,
       combinedWeekIron,
+      maxWeightKg,
+      ironLifetime,
     });
 
     const prGrit = prs.length * PR_GRIT;
@@ -341,6 +350,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     patchProfile({
       iron: p.iron + ironTotal,
+      iron_lifetime: ironLifetime,
       grit: p.grit + gritEarned,
       exercise_state: nextExerciseState,
       program_stage: programStage,

@@ -36,6 +36,9 @@ export interface EvaluateInput {
   partnerTrainedToday: boolean;
   bothStreak14: boolean;
   combinedWeekIron: number;
+  /** Strength signals. */
+  maxWeightKg: number;
+  ironLifetime: number;
 }
 
 function bodiesOf(entries: LoggedEntry[]): Set<string> {
@@ -73,6 +76,8 @@ function buildContext(input: EvaluateInput): AchievementContext {
     partnerTrainedToday: input.partnerTrainedToday,
     bothStreak14: input.bothStreak14,
     combinedWeekIron: input.combinedWeekIron,
+    maxWeightKg: input.maxWeightKg,
+    ironLifetime: input.ironLifetime,
   };
 }
 

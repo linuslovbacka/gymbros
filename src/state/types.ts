@@ -14,6 +14,7 @@ export interface Profile {
   upper_tier: number;
   lower_tier: number;
   iron: number;
+  iron_lifetime: number;
   grit: number;
   pro_mode_level: number;
   streak_count: number;
@@ -38,6 +39,7 @@ export const WRITABLE_PROFILE_COLUMNS = [
   'upper_tier',
   'lower_tier',
   'iron',
+  'iron_lifetime',
   'grit',
   'pro_mode_level',
   'streak_count',

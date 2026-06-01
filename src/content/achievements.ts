@@ -8,7 +8,7 @@
 // need richer history (Never Skips, Five-Plate Mind, Cardio Counts) are
 // intentionally deferred and noted at the bottom.
 
-export type AchievementCategory = 'consistency' | 'pr' | 'variety' | 'resilience' | 'bro';
+export type AchievementCategory = 'consistency' | 'pr' | 'variety' | 'resilience' | 'bro' | 'strength';
 export type Currency = 'GRIT' | 'IRON';
 
 /** Everything an achievement check is allowed to look at. */
@@ -39,6 +39,10 @@ export interface AchievementContext {
   bothStreak14: boolean;
   /** Combined IRON earned by the pair over the last 7 days. */
   combinedWeekIron: number;
+  /** Heaviest single working weight lifted (kg). */
+  maxWeightKg: number;
+  /** Lifetime IRON earned from training output (not the spendable balance). */
+  ironLifetime: number;
 }
 
 /** Combined weekly IRON needed for the shared "Combined Total" goal (tunable). */
@@ -117,6 +121,26 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'iron_sharpens_iron', name: 'Iron Sharpens Iron', category: 'bro',
     description: 'Both hold a 14-day streak at once.', currency: 'GRIT', amount: 150,
     check: (c) => c.bothStreak14 },
+
+  // ── Strength milestones (IRON) ─────────────────────────────────────────────
+  { id: 'first_plate', name: 'First Plate', category: 'strength',
+    description: 'Lift 60 kg on any movement.', currency: 'IRON', amount: 100,
+    check: (c) => c.maxWeightKg >= 60 },
+  { id: 'two_plate_club', name: 'Two Plate Club', category: 'strength',
+    description: 'Lift 100 kg on any movement.', currency: 'IRON', amount: 250,
+    check: (c) => c.maxWeightKg >= 100 },
+  { id: 'three_plate', name: 'Three Plate Beast', category: 'strength',
+    description: 'Lift 140 kg on any movement.', currency: 'IRON', amount: 500,
+    check: (c) => c.maxWeightKg >= 140 },
+  { id: 'iron_5k', name: 'Tonnage', category: 'strength',
+    description: 'Earn 5,000 lifetime IRON.', currency: 'IRON', amount: 100,
+    check: (c) => c.ironLifetime >= 5000 },
+  { id: 'iron_25k', name: 'Heavy Industry', category: 'strength',
+    description: 'Earn 25,000 lifetime IRON.', currency: 'IRON', amount: 300,
+    check: (c) => c.ironLifetime >= 25000 },
+  { id: 'iron_100k', name: 'Forged in Iron', category: 'strength',
+    description: 'Earn 100,000 lifetime IRON.', currency: 'IRON', amount: 1000,
+    check: (c) => c.ironLifetime >= 100000 },
 ];
 
 /** GRIT paid out per PR (repeatable "New Heights", gymbros-achievements.md). */
