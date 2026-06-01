@@ -8,7 +8,7 @@
 // need richer history (Never Skips, Five-Plate Mind, Cardio Counts) are
 // intentionally deferred and noted at the bottom.
 
-export type AchievementCategory = 'consistency' | 'pr' | 'variety' | 'resilience';
+export type AchievementCategory = 'consistency' | 'pr' | 'variety' | 'resilience' | 'bro';
 export type Currency = 'GRIT' | 'IRON';
 
 /** Everything an achievement check is allowed to look at. */
@@ -33,7 +33,16 @@ export interface AchievementContext {
   deRusted: boolean;
   /** Lifetime count of comebacks after a gap. */
   comebackCount: number;
+  /** Bro trained the same day as this session. */
+  partnerTrainedToday: boolean;
+  /** Both this player and the bro hold a 14+ day streak. */
+  bothStreak14: boolean;
+  /** Combined IRON earned by the pair over the last 7 days. */
+  combinedWeekIron: number;
 }
+
+/** Combined weekly IRON needed for the shared "Combined Total" goal (tunable). */
+export const COMBINED_WEEK_IRON_GOAL = 5000;
 
 export interface Achievement {
   id: string;
@@ -97,6 +106,17 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'no_quit', name: 'No Quit', category: 'resilience',
     description: 'Come back from a gap 3 separate times.', currency: 'GRIT', amount: 150,
     check: (c) => c.comebackCount >= 3 },
+
+  // ── Bro / Social ───────────────────────────────────────────────────────────
+  { id: 'spotter', name: 'Spotter', category: 'bro',
+    description: 'Train on the same day as your bro.', currency: 'GRIT', amount: 30,
+    check: (c) => c.partnerTrainedToday },
+  { id: 'combined_total', name: 'Combined Total', category: 'bro',
+    description: 'Hit a 5,000 IRON combined week with your bro.', currency: 'GRIT', amount: 100,
+    check: (c) => c.combinedWeekIron >= COMBINED_WEEK_IRON_GOAL },
+  { id: 'iron_sharpens_iron', name: 'Iron Sharpens Iron', category: 'bro',
+    description: 'Both hold a 14-day streak at once.', currency: 'GRIT', amount: 150,
+    check: (c) => c.bothStreak14 },
 ];
 
 /** GRIT paid out per PR (repeatable "New Heights", gymbros-achievements.md). */

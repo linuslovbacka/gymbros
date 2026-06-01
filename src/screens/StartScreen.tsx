@@ -5,21 +5,28 @@ import { ProModeHeader } from '../components/ProModeHeader';
 import { getCosmetic } from '../content/cosmetics';
 import type { Profile } from '../state/types';
 
+const TODAY = new Date().toISOString().slice(0, 10);
+
 function Fighter({ p, opponentIron }: { p: Profile; opponentIron: number | null }) {
   const rusty = p.rust_state?.rusty ?? false;
   const titleSlug = p.equipped?.title;
   const title = titleSlug ? getCosmetic(titleSlug)?.name : undefined;
+  const trainedToday = p.streak_last_date === TODAY;
   return (
     <div className="fighter">
       <div className="fighter-figure">
         <AvatarStage profile={p} opponentIron={opponentIron} />
       </div>
-      <div className="fighter-name">{p.display_name ?? 'Bro'}</div>
+      <div className="fighter-name">
+        {p.display_name ?? 'Bro'}
+        {trainedToday && <span className="today-dot" title="Trained today" />}
+      </div>
       {title && <div className="fighter-title">{title}</div>}
       {rusty && <div className="rust-badge">RUSTY</div>}
       <div className="fighter-tiers">
         <span className="tier-badge">UP {p.upper_tier}</span>
         <span className="tier-badge">LO {p.lower_tier}</span>
+        {p.streak_count > 0 && <span className="tier-badge streak">STREAK {p.streak_count}</span>}
       </div>
     </div>
   );
@@ -55,6 +62,10 @@ export function StartScreen({ onTrain, onLocker }: { onTrain: () => void; onLock
       </div>
 
       <ProModeHeader level={profile.pro_mode_level} onPress={pressProMode} />
+
+      {left && right && left.streak_last_date === TODAY && right.streak_last_date === TODAY && (
+        <div className="both-today">BOTH BROS IN TODAY</div>
+      )}
 
       <div className="vs">
         <div className="days-trained">

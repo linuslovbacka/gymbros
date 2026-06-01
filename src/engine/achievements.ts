@@ -32,6 +32,10 @@ export interface EvaluateInput {
   justReturned: boolean;
   deRusted: boolean;
   comebackCount: number;
+  /** Bro/social signals (computed from partner profile + sessions). */
+  partnerTrainedToday: boolean;
+  bothStreak14: boolean;
+  combinedWeekIron: number;
 }
 
 function bodiesOf(entries: LoggedEntry[]): Set<string> {
@@ -66,6 +70,9 @@ function buildContext(input: EvaluateInput): AchievementContext {
     justReturned: input.justReturned,
     deRusted: input.deRusted,
     comebackCount: input.comebackCount,
+    partnerTrainedToday: input.partnerTrainedToday,
+    bothStreak14: input.bothStreak14,
+    combinedWeekIron: input.combinedWeekIron,
   };
 }
 

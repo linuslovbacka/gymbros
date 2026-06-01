@@ -92,6 +92,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const profileRef = useRef<Profile | null>(null);
   profileRef.current = profile;
+  const partnerRef = useRef<Profile | null>(null);
+  partnerRef.current = partner;
 
   // ─── Persistence ──────────────────────────────────────────────────────────
   const flushSave = useCallback(async () => {
@@ -285,6 +287,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
       recentSessions = [sessionLite, ...((data as SessionLite[]) ?? [])];
     }
 
+    // ── Bro / social signals (spec section 11) ───────────────────────────────
+    const partner = partnerRef.current;
+    const weekAgo = new Date(Date.now() - 7 * DAY_MS).toISOString();
+    const myWeekIron = recentSessions
+      .filter((s) => s.created_at >= weekAgo)
+      .reduce((sum, s) => sum + ironForSession(s.entries ?? []), 0);
+    let combinedWeekIron = myWeekIron;
+    let partnerTrainedToday = false;
+    let bothStreak14 = false;
+    if (partner) {
+      partnerTrainedToday = partner.streak_last_date === today;
+      bothStreak14 = streakCount >= 14 && partner.streak_count >= 14;
+      if (SUPABASE_ENABLED) {
+        const { data: pData } = await supabase
+          .from('sessions')
+          .select('iron_earned')
+          .eq('user_id', partner.user_id)
+          .gte('created_at', weekAgo);
+        const partnerWeekIron = (pData ?? []).reduce(
+          (s: number, r: { iron_earned?: number }) => s + (r.iron_earned ?? 0),
+          0,
+        );
+        combinedWeekIron += partnerWeekIron;
+      }
+    }
+
     const accountAgeDays = Math.floor((Date.now() - new Date(p.created_at).getTime()) / DAY_MS);
     const alreadyUnlocked = new Set((p.unlocked_achievements as string[]) ?? []);
     const { unlocked, gritAward, ironAward } = evaluateAchievements({
@@ -297,6 +325,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       justReturned: rec.justReturned,
       deRusted: rec.deRusted,
       comebackCount: rec.rustState.comebackCount,
+      partnerTrainedToday,
+      bothStreak14,
+      combinedWeekIron,
     });
 
     const prGrit = prs.length * PR_GRIT;
