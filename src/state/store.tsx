@@ -20,6 +20,7 @@ import type { Feel, LoggedEntry, ProgressAnswer } from '../engine/types';
 import { detectPRs, type PR } from '../engine/pr';
 import { evaluateAchievements, type AchievementUnlock, type SessionLite } from '../engine/achievements';
 import { PR_GRIT } from '../content/achievements';
+import { reconcileLapse, applySessionToRust } from '../engine/rust';
 
 const STAGE_AFTER: Record<Exclude<ProgramStage, 'standard'>, ProgramStage> = {
   w1: 'w2',
@@ -29,10 +30,6 @@ const STAGE_AFTER: Record<Exclude<ProgramStage, 'standard'>, ProgramStage> = {
 
 function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
-}
-
-function monthKey(): string {
-  return new Date().toISOString().slice(0, 7);
 }
 
 export interface CompleteSessionInput {
@@ -113,7 +110,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const loadProfile = useCallback(async (uid: string) => {
     const { data, error } = await supabase.from('profiles').select('*').eq('user_id', uid).maybeSingle();
     if (error) { console.error('[gymbros] loadProfile', error); return; }
-    if (data) setProfile(data as Profile);
+    if (!data) return;
+
+    // Reconcile any lapse since the last read (no server cron — see engine/rust).
+    const profile = data as Profile;
+    const r = reconcileLapse(profile, new Date());
+    const reconciled: Profile = r.changed
+      ? { ...profile, rust_state: r.rustState, rest_tokens: r.restTokens, rest_tokens_month: r.restTokensMonth }
+      : profile;
+    setProfile(reconciled);
+    if (r.changed) {
+      await supabase
+        .from('profiles')
+        .update({ rust_state: r.rustState, rest_tokens: r.restTokens, rest_tokens_month: r.restTokensMonth })
+        .eq('user_id', uid);
+    }
   }, []);
 
   const loadPartner = useCallback(async (pairId: string, myId: string) => {
@@ -242,11 +253,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
 
     const today = todayISO();
-    const streakCount = p.streak_last_date === today ? p.streak_count : p.streak_count + 1;
-
-    // Monthly rest-token refill (full rust logic arrives in Phase 3).
-    const restMonth = monthKey();
-    const restTokens = p.rest_tokens_month === restMonth ? p.rest_tokens : 3;
+    const now = new Date();
+    // Reconcile any lapse up to now, then apply this session on top: advance
+    // recovery / de-rust, count comebacks, and resume the streak (spec section 9).
+    const before = reconcileLapse(p, now);
+    const rec = applySessionToRust(
+      before.rustState,
+      { streakCount: p.streak_count, streakLastDate: p.streak_last_date, today },
+      now,
+    );
+    const streakCount = rec.streakCount;
+    const restMonth = rec.restTokensMonth;
+    const restTokens = rec.restTokens;
 
     // Achievement evaluation needs recent history (week/month windows). Pull the
     // last 31 days and prepend the session we're about to log.
@@ -272,6 +290,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       accountAgeDays,
       alreadyUnlocked,
       recentSessions,
+      justReturned: rec.justReturned,
+      deRusted: rec.deRusted,
+      comebackCount: rec.rustState.comebackCount,
     });
 
     const prGrit = prs.length * PR_GRIT;
@@ -291,6 +312,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       streak_last_date: today,
       rest_tokens: restTokens,
       rest_tokens_month: restMonth,
+      rust_state: rec.rustState,
     });
 
     if (SUPABASE_ENABLED) {

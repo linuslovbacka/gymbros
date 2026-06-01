@@ -4,16 +4,28 @@ import { ProModeHeader } from '../components/ProModeHeader';
 import type { Profile } from '../state/types';
 
 function Fighter({ p, side }: { p: Profile; side: 'left' | 'right' }) {
+  const rusty = p.rust_state?.rusty ?? false;
   return (
     <div className="fighter">
       <div className="fighter-figure">
-        <Avatar tier={derivePhysiqueTier(p.upper_tier, p.lower_tier)} side={side} />
+        <Avatar tier={derivePhysiqueTier(p.upper_tier, p.lower_tier)} side={side} rusty={rusty} />
       </div>
       <div className="fighter-name">{p.display_name ?? 'Bro'}</div>
+      {rusty && <div className="rust-badge">RUSTY</div>}
       <div className="fighter-tiers">
         <span className="tier-badge">UP {p.upper_tier}</span>
         <span className="tier-badge">LO {p.lower_tier}</span>
       </div>
+    </div>
+  );
+}
+
+function RestTokens({ count }: { count: number }) {
+  return (
+    <div className="rest-tokens" title="Rest tokens — buffer before your gear rusts">
+      {[0, 1, 2].map((i) => (
+        <span key={i} className={`token ${i < count ? 'on' : 'off'}`} />
+      ))}
     </div>
   );
 }
@@ -32,6 +44,7 @@ export function StartScreen({ onTrain }: { onTrain: () => void }) {
         <div className="chips">
           <span className="chip iron"><span className="dot" />{profile.iron} IRON</span>
           <span className="chip grit"><span className="dot" />{profile.grit} GRIT</span>
+          <RestTokens count={profile.rest_tokens} />
         </div>
         <button className="back" onClick={() => void signOut()}>Sign out</button>
       </div>

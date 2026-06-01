@@ -59,6 +59,19 @@
   font-size: 11px; letter-spacing: 0.08em; color: var(--muted);
   border: 1px solid var(--line); border-radius: 6px; padding: 3px 7px;
 }
+.rust-badge {
+  font-family: var(--font-display); font-size: 11px; letter-spacing: 0.14em;
+  color: #c08a5a; border: 1px solid #6e5236; background: rgba(120,80,40,0.18);
+  border-radius: 5px; padding: 2px 8px; margin: -2px 0 2px;
+}
+
+.rest-tokens { display: inline-flex; align-items: center; gap: 4px; padding-left: 4px; }
+.rest-tokens .token {
+  width: 9px; height: 9px; border-radius: 50%;
+  border: 1px solid var(--line-bright);
+}
+.rest-tokens .token.on { background: var(--amber); border-color: var(--amber); }
+.rest-tokens .token.off { background: transparent; opacity: 0.5; }
 .vs-mark {
   font-family: var(--font-display);
   font-size: 44px;

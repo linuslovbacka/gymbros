@@ -28,6 +28,10 @@ export interface EvaluateInput {
   alreadyUnlocked: Set<string>;
   /** Recent sessions (last ~31 days) INCLUDING the one just completed. */
   recentSessions: SessionLite[];
+  /** Resilience signals computed from the rust engine for this session. */
+  justReturned: boolean;
+  deRusted: boolean;
+  comebackCount: number;
 }
 
 function bodiesOf(entries: LoggedEntry[]): Set<string> {
@@ -59,6 +63,9 @@ function buildContext(input: EvaluateInput): AchievementContext {
     accountAgeDays: input.accountAgeDays,
     groupsLast7,
     legSessionsThisMonth,
+    justReturned: input.justReturned,
+    deRusted: input.deRusted,
+    comebackCount: input.comebackCount,
   };
 }
 

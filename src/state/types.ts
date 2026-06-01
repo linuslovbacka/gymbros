@@ -1,4 +1,5 @@
 import type { ExerciseState, ProgramStage } from '../content/workouts';
+import type { RustState } from '../engine/rust';
 
 /** Mirrors the `profiles` row. JSONB columns are typed loosely for Phase 1. */
 export interface Profile {
@@ -15,7 +16,7 @@ export interface Profile {
   streak_last_date: string | null;
   rest_tokens: number;
   rest_tokens_month: string | null;
-  rust_state: Record<string, unknown>;
+  rust_state: RustState;
   equipped: Record<string, unknown>;
   owned_cosmetics: unknown[];
   unlocked_achievements: unknown[];

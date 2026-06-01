@@ -4,11 +4,11 @@
 //
 // Repeatable "New Heights" GRIT (per PR) is paid out directly in the store, not
 // modelled here. IRON strength milestones (Phase 7), Resilience/comeback
-// (Phase 3 rust) and Bro/Social (Phase 6) live in their own phases. A few
-// achievements that need richer history (Never Skips, Five-Plate Mind, Cardio
-// Counts) are intentionally deferred and noted at the bottom.
+// and Bro/Social (Phase 6) live in their own phases. A few achievements that
+// need richer history (Never Skips, Five-Plate Mind, Cardio Counts) are
+// intentionally deferred and noted at the bottom.
 
-export type AchievementCategory = 'consistency' | 'pr' | 'variety';
+export type AchievementCategory = 'consistency' | 'pr' | 'variety' | 'resilience';
 export type Currency = 'GRIT' | 'IRON';
 
 /** Everything an achievement check is allowed to look at. */
@@ -27,6 +27,12 @@ export interface AchievementContext {
   groupsLast7: Set<string>;
   /** Sessions this calendar month that included a legs exercise. */
   legSessionsThisMonth: number;
+  /** This session was a return after a 7+ day gap. */
+  justReturned: boolean;
+  /** Equipped gear fully de-rusted on this session. */
+  deRusted: boolean;
+  /** Lifetime count of comebacks after a gap. */
+  comebackCount: number;
 }
 
 export interface Achievement {
@@ -80,6 +86,17 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'leg_day_believer', name: 'Leg Day Believer', category: 'variety',
     description: 'Train legs 4 times in one month.', currency: 'GRIT', amount: 100,
     check: (c) => c.legSessionsThisMonth >= 4 },
+
+  // ── Resilience / Comeback ──────────────────────────────────────────────────
+  { id: 'back_at_it', name: 'Back at It', category: 'resilience',
+    description: 'Return after a 7+ day gap.', currency: 'GRIT', amount: 80,
+    check: (c) => c.justReturned },
+  { id: 'phoenix', name: 'Phoenix', category: 'resilience',
+    description: 'Fully de-rust your gear after a lapse.', currency: 'GRIT', amount: 100,
+    check: (c) => c.deRusted },
+  { id: 'no_quit', name: 'No Quit', category: 'resilience',
+    description: 'Come back from a gap 3 separate times.', currency: 'GRIT', amount: 150,
+    check: (c) => c.comebackCount >= 3 },
 ];
 
 /** GRIT paid out per PR (repeatable "New Heights", gymbros-achievements.md). */
