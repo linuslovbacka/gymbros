@@ -1,12 +1,25 @@
 // Placeholder pixel avatar. Real Nanobanan sprites get swapped in at Phase 5
-// (spec section 3). Shoulder/arm width scales with upper tier; legs with lower
-// tier, so a skipped leg day is immediately visible.
+// behind this same single-tier interface (spec section 3, generation spec).
+//
+// v1 rendering decision (spec section 3): the avatar is ONE combined sprite per
+// side driven by a SINGLE derived physique tier. Upper/lower stay split in the
+// levelling data only — never drawn as independent body halves.
 
 interface AvatarProps {
-  upperTier: number;
-  lowerTier: number;
+  /** The single derived physique tier (see derivePhysiqueTier). */
+  tier: number;
   side: 'left' | 'right';
   flexing?: boolean;
+}
+
+/**
+ * Collapse the separately-tracked upper/lower levelling tiers into the one
+ * physique tier the sprite is rendered from. Using the lower of the two keeps a
+ * skipped leg day honest (it holds the whole physique back) without drawing the
+ * body as two independent halves.
+ */
+export function derivePhysiqueTier(upperTier: number, lowerTier: number): number {
+  return Math.max(1, Math.min(10, Math.min(upperTier, lowerTier)));
 }
 
 const PALETTE = {
@@ -20,13 +33,12 @@ const PALETTE = {
   outline: '#0b0d10',
 };
 
-export function Avatar({ upperTier, lowerTier, side, flexing }: AvatarProps) {
-  // 1..10 tiers -> growth factors
-  const u = Math.max(1, Math.min(10, upperTier));
-  const l = Math.max(1, Math.min(10, lowerTier));
-  const shoulder = 22 + u * 3.2;
-  const arm = 6 + u * 1.1;
-  const thigh = 9 + l * 1.0;
+export function Avatar({ tier, side, flexing }: AvatarProps) {
+  // One derived physique tier (1..10) drives the whole silhouette.
+  const t = Math.max(1, Math.min(10, tier));
+  const shoulder = 22 + t * 3.2;
+  const arm = 6 + t * 1.1;
+  const thigh = 9 + t * 1.0;
   const cx = 60;
 
   return (

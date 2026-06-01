@@ -1,5 +1,5 @@
 import { useApp } from '../state/store';
-import { Avatar } from '../components/Avatar';
+import { Avatar, derivePhysiqueTier } from '../components/Avatar';
 import { ProModeHeader } from '../components/ProModeHeader';
 import type { Profile } from '../state/types';
 
@@ -7,7 +7,7 @@ function Fighter({ p, side }: { p: Profile; side: 'left' | 'right' }) {
   return (
     <div className="fighter">
       <div className="fighter-figure">
-        <Avatar upperTier={p.upper_tier} lowerTier={p.lower_tier} side={side} />
+        <Avatar tier={derivePhysiqueTier(p.upper_tier, p.lower_tier)} side={side} />
       </div>
       <div className="fighter-name">{p.display_name ?? 'Bro'}</div>
       <div className="fighter-tiers">
@@ -58,7 +58,7 @@ function WaitingSide() {
   return (
     <div className="empty-side">
       <div className="fighter-figure" style={{ opacity: 0.3 }}>
-        <Avatar upperTier={1} lowerTier={1} side="right" />
+        <Avatar tier={1} side="right" />
       </div>
       <div className="tiny">waiting for bro</div>
     </div>

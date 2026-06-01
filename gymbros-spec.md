@@ -44,13 +44,15 @@ The app is intentionally small. Three screens, one job each.
 
 ## 3. Avatar system
 
-The avatar is the core feedback loop of the entire app — strength in the real world is reflected as visible muscle on screen. Upper and lower body are tracked separately, so skipped leg days are *immediately visible*.
+The avatar is the core feedback loop of the entire app — strength in the real world is reflected as visible muscle on screen. Upper and lower body are tracked separately *in data*, so skipped leg days still register in progression — but see the v1 rendering note below for how that maps to the sprite.
 
 ### Progression
 - **5–10 visual stages** from scrawny → unhinged
-- Upper body and lower body progress independently
+- Upper- and lower-body progression is tracked independently in the levelling data (§5)
 - Movement via spritesheet — idle animation (breathing), plus a flex/taunt for the done screen
 - Placeholder art at first; real sprites swapped in once the references and prompts are dialled in
+
+> **v1 rendering decision (IMPORTANT for implementation):** Do **NOT** build separate upper-body and lower-body sprites/spritesheets, and do **NOT** generate or composite the avatar from independent upper/lower halves. For v1 the avatar is rendered as a **single combined sprite per side**, driven by **one derived physique tier** (computed from the separately-tracked upper/lower data — e.g. the lower of the two). Upper/lower stays split in the *levelling data* only. A future v2 may revisit a visible upper/lower split via layered compositing — but no code, art, or spritesheet structure for a split avatar should be created in v1.
 
 ### Visual style (Discussion 2)
 
@@ -170,6 +172,8 @@ So Linus on archer pull-ups and Oskar on band pull-ups, both doing 8 reps, earn 
 ### The avatar growth signal
 
 Levelling the avatar's upper- and lower-body tiers is tied to **climbing the ladder on a major movement**, not to weight added or rep count alone. Whether that climb happens via a +5 kg jump on bench or a switch from band pull-up to full pull-up, the avatar tier advances the same way. This keeps the avatar progression equally satisfying for both modes.
+
+These upper/lower tiers live in the levelling **data**. For v1 the *rendered* sprite uses a single derived physique tier computed from them (see §3 v1 rendering decision) — the split is not drawn as separate body halves.
 
 ---
 
@@ -385,6 +389,22 @@ Cosmetics are bought primarily with **GRIT**. The flashiest hardcore-only items 
 - Joke unlocks (chicken legs, novelty mankini) priced cheap on purpose — comedy is part of the reward
 - Rarity tiers: common → rare → epic → legendary, colour-coded throughout
 
+### Equip model — RPG slots (IMPORTANT for implementation)
+Cosmetics that appear *on the avatar* use a classic RPG slot system, one item per slot. The equip screen and avatar render must be built around these slots:
+
+- **Head, Torso, Hands, Waist, Legs, Feet** — body-worn gear.
+- **Aura / Effect** — earned, equippable decorative effect (ember accent, animated streak aura). Swappable; rusts with the equipped set. (Distinct from the system fire vortex in §10.)
+- **Companion** — a floating spotter-drone (own animation loop, sits beside the avatar).
+- **Special / Soul Takeover** — legendary full-avatar reskin that *replaces* the render and disables the normal slots.
+
+Titles/banners and locker themes are not avatar slots — they decorate the name/profile, not the body.
+
+### How equipped cosmetics render (hybrid — do NOT regenerate the whole avatar per equip naively)
+- **Aura + Companion → runtime layers.** Composited live over the avatar by z-order; instant equip/unequip; play their own animation loops. No image generation at equip time.
+- **Body-worn slots → cached "loadout bake."** The fitted avatar-wearing-loadout sprite is produced by the generation pipeline (below) and **cached by `player + tier + loadout-hash`** in the `avatar_renders` table. The app looks up the current loadout's bake; if absent, it falls back to the base-tier avatar and the bake is produced out-of-band. The app does **not** call image models directly.
+- **Special → full replacement** sprite, resolved like a tier avatar.
+- Equipped set + rust state (§9) is per-player data the app owns; the *art* it points at comes from the pipeline's Storage/tables.
+
 ### Detail pages with descriptions
 Clicking the avatar opens the achievements/cosmetics grid. Clicking any item opens a detail page with a short, funny description in honest gym-bro voice. Examples agreed:
 - *Consistency Crown* — "You showed up. Even we're shocked."
@@ -466,8 +486,14 @@ A continuous visual feedback layer showing how close the avatar is to the next l
 - **Frontend:** React PWA via Vite
 - **Backend:** Supabase (auth, realtime sync, Postgres storage)
 - **Deploy:** Vercel or Netlify
-- **Pixel art:** generated via Nanobanan Pro from agreed style prompts; placeholders in code first, real sprites swapped in iteratively
+- **Pixel art:** generated via Nanobanan Pro from agreed style prompts; placeholders in code first, real sprites swapped in iteratively. Generation is handled by a **separate dev-run pipeline** (see §15) — the app never calls image models itself
 - **Storage philosophy:** cloud-first from day one — same lesson as Gröda, no localStorage as primary store, no risk of losing Oskar's data when the schema changes
+
+### Avatar / cosmetic art contract (what the app consumes)
+The generation pipeline (§15, full design in `gymbros-generation-spec.md`) owns all avatar and cosmetic art and exposes it through Supabase. The app is a **read-only consumer** of:
+- Existing `profiles` (already holds tiers + equipped gear; gains `avatar_base_prompt`), plus new tables `cosmetics` (incl. `slot`, rarity, description, current image), `generated_images` (with `atlas` JSON for spritesheet playback), and `avatar_renders` (loadout-bake cache keyed by `profile + tier + loadout_hash`).
+- The existing public **`avatars` Storage bucket**, organized by prefix (`avatars/`, `cosmetics/`, `layers/`, `bakes/`, `effects/`) and versioned `v{n}`: standalone grid items, aura/companion layer sheets, loadout bakes, special reskins, and the fire-vortex stage loops.
+- The app composites equipped slots by z-order, plays spritesheets via the `atlas` metadata, picks the fire-vortex stage from `intensity = currentXP / threshold` and tints it by currency in-app (§10), and applies rust as a visual treatment over the equipped set (§9).
 
 ---
 
@@ -476,10 +502,11 @@ A continuous visual feedback layer showing how close the avatar is to the next l
 1. **Currencies + session logging** — everything else hangs off these two primitives
 2. **PR detection + Consistency/PR achievements** — fastest dopamine, hooks the beginner phase
 3. **Rust/rest-token streak system** — retention insurance
-4. **Cosmetics + equip screen + detail-page descriptions**
-5. **Avatar + fire vortex effect** — wire the vortex to the existing XP float
+4. **Cosmetics + equip screen + detail-page descriptions** — equip screen is built around the RPG slots (§8); art is read from the pipeline's Supabase tables/bucket (§12 contract, §15)
+5. **Avatar + fire vortex effect** — composite equipped slots by z-order, play spritesheets from `atlas` metadata, resolve loadout bakes from `avatar_renders`, wire the vortex stage to the existing XP float
 6. **Bro/social achievements** — needs both accounts wired
 7. **Strength milestones + IRON shop** — last because IRON is the slower currency
+8. **Real art generation pass (FINAL, pre-launch)** — the whole app is built and ships against placeholder art; the avatar/cosmetic pipeline (§15, `gymbros-generation-spec.md`) is run **last, manually**, to produce and `approve` the real sprites just before launching to the friend. No auto-generation — manual + approval-gated only.
 
 ---
 
@@ -489,6 +516,49 @@ A continuous visual feedback layer showing how close the avatar is to the next l
 - Tuning the IRON multipliers in §6 — first-pass numbers, calibrate against real session data
 - Tuning the 2–3-session ceiling-check window — too short and progression feels jumpy, too long and it feels stalled
 - Data model for a "session" and a "PR" (what fields, how PR detection actually runs)
-- Pixel art for all 5–10 progression stages of both upper and lower body (currently only Level 1 prompted)
+- Pixel art for all 5–10 single-tier progression stages per side (currently only Level 1 prompted; v1 renders one combined tier per side — see §3)
 - Exercise video sources / hosting
 - Whether the Pro Mode header lives across both accounts or is per-user
+- Exact Nanobanan Pro model id + whether loadout bakes run as a Supabase Edge Function (see §15)
+
+---
+
+## 15. Avatar & cosmetic generation pipeline
+
+A **separate, dev-run tooling pipeline** (not part of the app runtime, not a user feature) that produces every avatar/cosmetic asset and writes them to Supabase for the app to consume (§12 contract). The app never calls image models directly. **Full design lives in `gymbros-generation-spec.md`** (decisions + reasoning, style guide, prompt structure, and how old prompts/images are versioned and stored); this section is the summary the app build must align to.
+
+### What it is
+- A local TypeScript CLI under `tools/cosmetic-gen/` run manually during development.
+- Generation via **Gemini Nanobanan Pro**; background removal locally via `@imgly/background-removal-node` (remove.bg as fallback); frame alignment + spritesheet packing via `sharp`.
+- Secrets (`GEMINI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) stay local; never shipped to the client.
+
+### What it generates
+- **Avatar tiers** — one combined sprite per side per tier (§3 v1 decision), as a base pose plus short idle/flex clips packed into spritesheets (frames conditioned on frame 0 for character consistency; graceful fallback to a single static frame + code-driven motion).
+- **Standalone cosmetic items** — the grid icons for the achievements/cosmetics list.
+- **Aura + Companion layers** — transparent, self-animating overlay sheets composited at runtime.
+- **Loadout bakes** — body-worn loadouts baked onto the current avatar via image-to-image, cached by `player + tier + loadout-hash` in `avatar_renders`.
+- **Special / Soul Takeover** — full-avatar reskin sprites.
+- **Fire vortex** — 5 fixed stage loops, neutral/white so the app tints per currency (§10); a system effect, not a cosmetic.
+
+### Versioning
+- Editable prompt *source* lives in the repo (git-diffable): base style, per-player prompt, tier scaffold, per-cosmetic fragments mapped to slots, vortex stages.
+- Every run snapshots the exact resolved prompt + params + images immutably into Supabase (`prompt_versions`, `generated_images`); old versions are archived, never overwritten. An `approve` step flips which version is current/live.
+
+### Trigger model
+- New achievement with a cosmetic → resolve to its slot → bake (worn) or layer (aura/companion) → archive previous, set new current. Level-ups bake the new tier carrying the equipped loadout over.
+- v1: bakes are pre-produced via the CLI for the loadouts players actually earn. The `avatar_renders` cache is the shared source of truth, so a future Supabase Edge Function can run the same bake on-equip with no rework.
+
+### Consumer integration checklist (for the app build)
+The app build is responsible only for *consuming* this output. To do that:
+
+- [ ] Build the whole app against **placeholder art**; do not block on real sprites. The generation pass is build-order step 8 (final, pre-launch).
+- [ ] **Never call image models** from the app or backend. Read finished, **approved** assets only.
+- [ ] Render the avatar as a **single combined sprite per side** from one derived tier — no separate upper/lower sprites.
+- [ ] Play avatar/cosmetic animation from **spritesheet + `atlas` JSON**; support a static-frame fallback with code-driven motion (bob / flex pop).
+- [ ] Build the equip screen on the **RPG slots** (Head, Torso, Hands, Waist, Legs, Feet, Aura, Companion, Special).
+- [ ] Composite the rendered avatar by **z-order**: loadout bake (or base-tier fallback if the current loadout isn't baked yet) → aura layer → companion layer; Special replaces the whole stack.
+- [ ] Resolve the current avatar art via `avatar_renders` (by `profile + tier + loadout_hash`), falling back to the base-tier avatar when a loadout bake is absent.
+- [ ] Render the **fire vortex** separately: pick the stage from `intensity = currentXP / threshold`, tint per currency in-app, draw base behind torso and flames in front. It is NOT the Aura slot.
+- [ ] Resolve all images through **current/approved DB pointers** (`cosmetics.current_image_id`, `generated_images.is_approved`); never hardcode Storage paths.
+- [ ] Apply **rust** (§9) as a visual treatment over the equipped set — a shader/filter on the composited layers, not a separate generated asset.
+- [ ] Read player art state from `profiles` (tier, equipped gear, `avatar_base_prompt`); the app owns equip/rust state, the pipeline owns the art.
