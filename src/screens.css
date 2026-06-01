@@ -159,6 +159,31 @@
 .levelup h3 { color: var(--amber-bright); font-size: 18px; }
 .levelup .next { font-weight: 600; margin: 6px 0 12px; }
 
+.banner-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+
+.pr-banner {
+  display: flex; align-items: center; gap: 10px;
+  border: 1px solid var(--iron); border-radius: var(--radius-sm);
+  background: rgba(120,180,230,0.08); padding: 10px 14px;
+}
+.pr-tag {
+  font-family: var(--font-display); font-size: 13px; letter-spacing: 0.08em;
+  color: var(--iron); border: 1px solid var(--iron); border-radius: 4px; padding: 2px 6px;
+}
+.pr-name { font-weight: 700; flex: 1; }
+.pr-detail { color: var(--muted); font-size: 14px; }
+
+.ach-banner {
+  border: 1px solid var(--amber); border-radius: var(--radius-sm);
+  background: rgba(232,160,75,0.10); padding: 12px 14px;
+}
+.ach-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.ach-name { font-family: var(--font-display); font-size: 16px; color: var(--amber-bright); }
+.ach-amt { font-weight: 700; font-size: 14px; }
+.ach-amt.grit { color: var(--amber); }
+.ach-amt.iron { color: var(--iron); }
+.ach-desc { color: var(--muted); font-size: 13px; margin-top: 2px; }
+
 .toast {
   position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
   background: var(--bg-3); border: 1px solid var(--line-bright); border-radius: 999px;

@@ -22,6 +22,8 @@ export interface Profile {
   exercise_state: ExerciseState;
   program_stage: ProgramStage;
   days_trained: number;
+  pr_count: number;
+  created_at: string;
   updated_at: string;
 }
 
@@ -43,5 +45,6 @@ export const WRITABLE_PROFILE_COLUMNS = [
   'exercise_state',
   'program_stage',
   'days_trained',
+  'pr_count',
   'display_name',
 ] as const;

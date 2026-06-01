@@ -17,6 +17,9 @@ import type { ProgramStage } from '../content/workouts';
 import { ironForSession, gritForSession } from '../engine/currency';
 import { applyProgress, entryHitCeiling, climb, stepDown, declineLevelUp, type LevelUpPrompt } from '../engine/leveling';
 import type { Feel, LoggedEntry, ProgressAnswer } from '../engine/types';
+import { detectPRs, type PR } from '../engine/pr';
+import { evaluateAchievements, type AchievementUnlock, type SessionLite } from '../engine/achievements';
+import { PR_GRIT } from '../content/achievements';
 
 const STAGE_AFTER: Record<Exclude<ProgramStage, 'standard'>, ProgramStage> = {
   w1: 'w2',
@@ -45,7 +48,11 @@ export interface CompleteSessionResult {
   ironEarned: number;
   gritEarned: number;
   prompts: LevelUpPrompt[];
+  prs: PR[];
+  achievements: AchievementUnlock[];
 }
+
+const DAY_MS = 86_400_000;
 
 interface AppState {
   ready: boolean;
@@ -221,9 +228,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     const ironEarned = ironForSession(input.entries);
     const ceilingCount = input.entries.filter(entryHitCeiling).length;
-    const gritEarned = gritForSession(ceilingCount);
+    const baseGrit = gritForSession(ceilingCount);
 
-    const { state: nextExerciseState, prompts } = applyProgress(p.exercise_state, input.entries, input.progress);
+    // PR detection runs against the pre-update bests, then leveling applies its
+    // own ceiling/rung changes on top — they touch disjoint fields per exercise.
+    const { state: afterPR, prs } = detectPRs(p.exercise_state, input.entries);
+    const { state: nextExerciseState, prompts } = applyProgress(afterPR, input.entries, input.progress);
+    const prCount = p.pr_count + prs.length;
 
     let programStage = p.program_stage;
     if (input.mode === 'home' && programStage !== 'standard') {
@@ -237,12 +248,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const restMonth = monthKey();
     const restTokens = p.rest_tokens_month === restMonth ? p.rest_tokens : 3;
 
+    // Achievement evaluation needs recent history (week/month windows). Pull the
+    // last 31 days and prepend the session we're about to log.
+    const sessionLite: SessionLite = { created_at: new Date().toISOString(), entries: input.entries };
+    let recentSessions: SessionLite[] = [sessionLite];
+    if (SUPABASE_ENABLED) {
+      const since = new Date(Date.now() - 31 * DAY_MS).toISOString();
+      const { data } = await supabase
+        .from('sessions')
+        .select('created_at, entries')
+        .eq('user_id', p.user_id)
+        .gte('created_at', since)
+        .order('created_at', { ascending: false });
+      recentSessions = [sessionLite, ...((data as SessionLite[]) ?? [])];
+    }
+
+    const accountAgeDays = Math.floor((Date.now() - new Date(p.created_at).getTime()) / DAY_MS);
+    const alreadyUnlocked = new Set((p.unlocked_achievements as string[]) ?? []);
+    const { unlocked, gritAward, ironAward } = evaluateAchievements({
+      streak: streakCount,
+      prCount,
+      distinctExercises: Object.keys(nextExerciseState).length,
+      accountAgeDays,
+      alreadyUnlocked,
+      recentSessions,
+    });
+
+    const prGrit = prs.length * PR_GRIT;
+    const gritEarned = baseGrit + prGrit + gritAward;
+    const ironTotal = ironEarned + ironAward;
+    const unlockedAchievements = [...((p.unlocked_achievements as string[]) ?? []), ...unlocked.map((u) => u.id)];
+
     patchProfile({
-      iron: p.iron + ironEarned,
+      iron: p.iron + ironTotal,
       grit: p.grit + gritEarned,
       exercise_state: nextExerciseState,
       program_stage: programStage,
       days_trained: p.days_trained + 1,
+      pr_count: prCount,
+      unlocked_achievements: unlockedAchievements,
       streak_count: streakCount,
       streak_last_date: today,
       rest_tokens: restTokens,
@@ -258,9 +302,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         entries: input.entries,
         feel: input.feel,
         progress_answer: input.progress,
-        iron_earned: ironEarned,
+        iron_earned: ironTotal,
         grit_earned: gritEarned,
-        prs: [],
+        prs,
       });
       if (error) console.error('[gymbros] session insert failed', error);
     }
@@ -268,7 +312,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (input.kind === 'split' && input.splitDirection) setLastSplitDirection(input.splitDirection);
     await flushSave();
 
-    return { ironEarned, gritEarned, prompts };
+    return { ironEarned: ironTotal, gritEarned, prompts, prs, achievements: unlocked };
   }, [patchProfile, flushSave]);
 
   const climbExercise = useCallback((id: string) => {

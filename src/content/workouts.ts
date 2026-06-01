@@ -77,6 +77,13 @@ export interface ExerciseProgress {
   ceilingStreak?: number;
   /** Eligible to climb — surfaced as a prompt. */
   pendingLevelUp?: boolean;
+  /**
+   * Best effort ever recorded, for PR detection. Compared lexicographically:
+   * `prRank` first (ladder index for calisthenics, working weight for gym),
+   * then `prValue` (max reps, or seconds for holds) as the tie-breaker.
+   */
+  prRank?: number;
+  prValue?: number;
 }
 
 export type ExerciseState = Record<string, ExerciseProgress>;

@@ -3,14 +3,24 @@ import { useApp } from '../state/store';
 import { Avatar, derivePhysiqueTier } from '../components/Avatar';
 import { FEEL_OPTIONS, CALISTHENICS_PROGRESS, GYM_PROGRESS, type Feel, type ProgressAnswer } from '../engine/types';
 import type { LevelUpPrompt } from '../engine/leveling';
+import type { PR } from '../engine/pr';
+import type { AchievementUnlock } from '../engine/achievements';
 import type { SessionDraft } from './WorkoutScreen';
+
+interface ResultState {
+  iron: number;
+  grit: number;
+  prompts: LevelUpPrompt[];
+  prs: PR[];
+  achievements: AchievementUnlock[];
+}
 
 export function DoneScreen({ draft, onClose }: { draft: SessionDraft; onClose: () => void }) {
   const { profile, completeSession, climbExercise, declineExercise } = useApp();
   const [feel, setFeel] = useState<Feel>();
   const [progress, setProgress] = useState<ProgressAnswer>();
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<{ iron: number; grit: number; prompts: LevelUpPrompt[] }>();
+  const [result, setResult] = useState<ResultState>();
 
   const progressOptions = draft.mode === 'gym' ? GYM_PROGRESS : CALISTHENICS_PROGRESS;
 
@@ -19,7 +29,7 @@ export function DoneScreen({ draft, onClose }: { draft: SessionDraft; onClose: (
     setBusy(true);
     const r = await completeSession({ ...draft, feel, progress });
     setBusy(false);
-    setResult({ iron: r.ironEarned, grit: r.gritEarned, prompts: r.prompts });
+    setResult({ iron: r.ironEarned, grit: r.gritEarned, prompts: r.prompts, prs: r.prs, achievements: r.achievements });
   }
 
   // ── Result view ───────────────────────────────────────────────────────
@@ -47,6 +57,32 @@ export function DoneScreen({ draft, onClose }: { draft: SessionDraft; onClose: (
             <div className="tiny">GRIT</div>
           </div>
         </div>
+
+        {result.prs.length > 0 && (
+          <div className="banner-list">
+            {result.prs.map((pr) => (
+              <div className="pr-banner" key={pr.exerciseId}>
+                <span className="pr-tag">PR</span>
+                <span className="pr-name">{pr.name}</span>
+                <span className="pr-detail">{pr.detail}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {result.achievements.length > 0 && (
+          <div className="banner-list">
+            {result.achievements.map((a) => (
+              <div className="ach-banner" key={a.id}>
+                <div className="ach-head">
+                  <span className="ach-name">{a.name}</span>
+                  <span className={`ach-amt ${a.currency.toLowerCase()}`}>+{a.amount} {a.currency}</span>
+                </div>
+                <div className="ach-desc">{a.description}</div>
+              </div>
+            ))}
+          </div>
+        )}
 
         <LevelUps
           prompts={result.prompts}
