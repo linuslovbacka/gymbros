@@ -1,16 +1,21 @@
 import { useApp } from '../state/store';
-import { Avatar, derivePhysiqueTier } from '../components/Avatar';
+import { Avatar } from '../components/Avatar';
+import { AvatarStage } from '../components/AvatarStage';
 import { ProModeHeader } from '../components/ProModeHeader';
+import { getCosmetic } from '../content/cosmetics';
 import type { Profile } from '../state/types';
 
-function Fighter({ p, side }: { p: Profile; side: 'left' | 'right' }) {
+function Fighter({ p, opponentIron }: { p: Profile; opponentIron: number | null }) {
   const rusty = p.rust_state?.rusty ?? false;
+  const titleSlug = p.equipped?.title;
+  const title = titleSlug ? getCosmetic(titleSlug)?.name : undefined;
   return (
     <div className="fighter">
       <div className="fighter-figure">
-        <Avatar tier={derivePhysiqueTier(p.upper_tier, p.lower_tier)} side={side} rusty={rusty} />
+        <AvatarStage profile={p} opponentIron={opponentIron} />
       </div>
       <div className="fighter-name">{p.display_name ?? 'Bro'}</div>
+      {title && <div className="fighter-title">{title}</div>}
       {rusty && <div className="rust-badge">RUSTY</div>}
       <div className="fighter-tiers">
         <span className="tier-badge">UP {p.upper_tier}</span>
@@ -57,9 +62,9 @@ export function StartScreen({ onTrain, onLocker }: { onTrain: () => void; onLock
           <div className="lbl">DAYS TRAINED</div>
         </div>
 
-        {left ? <Fighter p={left} side="left" /> : <WaitingSide />}
+        {left ? <Fighter p={left} opponentIron={right?.iron ?? null} /> : <WaitingSide />}
         <div className="vs-mark">VS</div>
-        {right ? <Fighter p={right} side="right" /> : <WaitingSide />}
+        {right ? <Fighter p={right} opponentIron={left?.iron ?? null} /> : <WaitingSide />}
       </div>
 
       <button className="btn btn-primary btn-train" onClick={onTrain}>TRAIN</button>

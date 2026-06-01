@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '../state/store';
-import { Avatar, derivePhysiqueTier } from '../components/Avatar';
+import { AvatarStage } from '../components/AvatarStage';
 import { FEEL_OPTIONS, CALISTHENICS_PROGRESS, GYM_PROGRESS, type Feel, type ProgressAnswer } from '../engine/types';
 import type { LevelUpPrompt } from '../engine/leveling';
 import type { PR } from '../engine/pr';
@@ -38,11 +38,7 @@ export function DoneScreen({ draft, onClose }: { draft: SessionDraft; onClose: (
       <div className="screen">
         <div className="done-hero">
           <div className="figure">
-            <Avatar
-              tier={derivePhysiqueTier(profile?.upper_tier ?? 1, profile?.lower_tier ?? 1)}
-              side={profile?.side ?? 'left'}
-              flexing
-            />
+            {profile && <AvatarStage profile={profile} opponentIron={null} flexing />}
           </div>
           <h1 className="done-title">SESSION LOGGED</h1>
         </div>

@@ -250,3 +250,44 @@
 .sheet-meta { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 2px; }
 .sheet-desc { color: var(--muted); font-size: 14px; line-height: 1.5; margin: 0 0 14px; }
 .sheet-error { color: #e0795f; font-size: 13px; margin-bottom: 10px; }
+
+.fighter-title {
+  font-style: italic; font-size: 13px; color: var(--amber-bright);
+  margin: -2px 0 4px; letter-spacing: 0.02em;
+}
+
+/* ── Fire vortex (Phase 5, spec section 10) ───────────────────────────────── */
+.avatar-stage { position: relative; width: 100%; height: 100%; }
+.avatar-layer { position: absolute; inset: 0; z-index: 1; display: flex; align-items: flex-end; justify-content: center; }
+
+.vortex { position: absolute; left: 50%; transform: translateX(-50%); pointer-events: none; border-radius: 50%; filter: blur(3px); }
+.vortex-base {
+  bottom: 5%; width: 68%; height: 16%; z-index: 0;
+  background: radial-gradient(ellipse at center, var(--vc1), var(--vc2) 55%, transparent 74%);
+  animation: vortex-pulse 1.6s ease-in-out infinite;
+}
+.vortex-front {
+  bottom: 9%; width: 44%; z-index: 2; mix-blend-mode: screen;
+  border-radius: 50% 50% 42% 42%;
+  background: radial-gradient(ellipse at center bottom, var(--vc1), var(--vc2) 50%, transparent 72%);
+  animation: vortex-pulse 0.9s ease-in-out infinite;
+}
+.vtint-grit { --vc1: rgba(255,182,72,0.92); --vc2: rgba(232,120,30,0.45); }
+.vtint-iron { --vc1: rgba(122,182,236,0.92); --vc2: rgba(60,120,210,0.45); }
+
+.vstage-1 { opacity: 0.32; }
+.vstage-2 { opacity: 0.5; }
+.vstage-3 { opacity: 0.7; }
+.vstage-4 { opacity: 0.86; }
+.vstage-5 { opacity: 1; }
+.vortex-front.vstage-1 { height: 20%; }
+.vortex-front.vstage-2 { height: 32%; }
+.vortex-front.vstage-3 { height: 46%; }
+.vortex-front.vstage-4 { height: 62%; }
+.vortex-front.vstage-5 { height: 80%; }
+
+@keyframes vortex-pulse {
+  0%, 100% { transform: translateX(-50%) scaleY(1);    filter: blur(3px) brightness(1); }
+  50%      { transform: translateX(-50%) scaleY(1.08); filter: blur(3px) brightness(1.28); }
+}
+@media (prefers-reduced-motion: reduce) { .vortex { animation: none; } }
