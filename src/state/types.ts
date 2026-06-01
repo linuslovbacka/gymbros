@@ -1,5 +1,9 @@
 import type { ExerciseState, ProgramStage } from '../content/workouts';
 import type { RustState } from '../engine/rust';
+import type { CosmeticSlot } from '../content/cosmetics';
+
+/** Equipped cosmetic per RPG slot (slug or absent). */
+export type EquipMap = Partial<Record<CosmeticSlot, string | null>>;
 
 /** Mirrors the `profiles` row. JSONB columns are typed loosely for Phase 1. */
 export interface Profile {
@@ -17,9 +21,10 @@ export interface Profile {
   rest_tokens: number;
   rest_tokens_month: string | null;
   rust_state: RustState;
-  equipped: Record<string, unknown>;
-  owned_cosmetics: unknown[];
-  unlocked_achievements: unknown[];
+  equipped: EquipMap;
+  owned_cosmetics: string[];
+  unlocked_achievements: string[];
+  avatar_base_prompt: string | null;
   exercise_state: ExerciseState;
   program_stage: ProgramStage;
   days_trained: number;
@@ -43,6 +48,7 @@ export const WRITABLE_PROFILE_COLUMNS = [
   'equipped',
   'owned_cosmetics',
   'unlocked_achievements',
+  'avatar_base_prompt',
   'exercise_state',
   'program_stage',
   'days_trained',

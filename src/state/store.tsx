@@ -21,6 +21,7 @@ import { detectPRs, type PR } from '../engine/pr';
 import { evaluateAchievements, type AchievementUnlock, type SessionLite } from '../engine/achievements';
 import { PR_GRIT } from '../content/achievements';
 import { reconcileLapse, applySessionToRust } from '../engine/rust';
+import { getCosmetic, cosmeticsForAchievement, type CosmeticSlot } from '../content/cosmetics';
 
 const STAGE_AFTER: Record<Exclude<ProgramStage, 'standard'>, ProgramStage> = {
   w1: 'w2',
@@ -68,6 +69,9 @@ interface AppState {
   climbExercise: (exerciseId: string) => void;
   stepDownExercise: (exerciseId: string) => void;
   declineExercise: (exerciseId: string) => void;
+  buyCosmetic: (slug: string) => { error?: string };
+  equipCosmetic: (slug: string) => void;
+  unequipSlot: (slot: CosmeticSlot) => void;
 }
 
 const Ctx = createContext<AppState | null>(null);
@@ -300,6 +304,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const ironTotal = ironEarned + ironAward;
     const unlockedAchievements = [...((p.unlocked_achievements as string[]) ?? []), ...unlocked.map((u) => u.id)];
 
+    // Grant any cosmetics tied to the achievements unlocked this session.
+    const grantedSlugs = unlocked.flatMap((u) => cosmeticsForAchievement(u.id).map((c) => c.slug));
+    const ownedCosmetics = Array.from(new Set([...(p.owned_cosmetics ?? []), ...grantedSlugs]));
+
     patchProfile({
       iron: p.iron + ironTotal,
       grit: p.grit + gritEarned,
@@ -308,6 +316,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       days_trained: p.days_trained + 1,
       pr_count: prCount,
       unlocked_achievements: unlockedAchievements,
+      owned_cosmetics: ownedCosmetics,
       streak_count: streakCount,
       streak_last_date: today,
       rest_tokens: restTokens,
@@ -352,6 +361,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
     patchProfile({ exercise_state: declineLevelUp(p.exercise_state, id) });
   }, [patchProfile]);
 
+  // ─── Cosmetics (spec section 8) ─────────────────────────────────────────────────
+  const buyCosmetic = useCallback((slug: string): { error?: string } => {
+    const p = profileRef.current; if (!p) return { error: 'no profile' };
+    const c = getCosmetic(slug);
+    if (!c) return { error: 'unknown item' };
+    if ((p.owned_cosmetics ?? []).includes(slug)) return { error: 'already owned' };
+    if (c.acquire.type !== 'shop') return { error: 'not for sale' };
+    const { currency, price } = c.acquire;
+    const balance = currency === 'IRON' ? p.iron : p.grit;
+    if (balance < price) return { error: `not enough ${currency}` };
+
+    patchProfile({
+      iron: currency === 'IRON' ? p.iron - price : p.iron,
+      grit: currency === 'GRIT' ? p.grit - price : p.grit,
+      owned_cosmetics: [...(p.owned_cosmetics ?? []), slug],
+    });
+    return {};
+  }, [patchProfile]);
+
+  const equipCosmetic = useCallback((slug: string) => {
+    const p = profileRef.current; if (!p) return;
+    const c = getCosmetic(slug);
+    if (!c || !(p.owned_cosmetics ?? []).includes(slug)) return;
+    patchProfile({ equipped: { ...(p.equipped ?? {}), [c.slot]: slug } });
+  }, [patchProfile]);
+
+  const unequipSlot = useCallback((slot: CosmeticSlot) => {
+    const p = profileRef.current; if (!p) return;
+    patchProfile({ equipped: { ...(p.equipped ?? {}), [slot]: null } });
+  }, [patchProfile]);
+
   const value = useMemo<AppState>(() => ({
     ready,
     user,
@@ -369,7 +409,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     climbExercise,
     stepDownExercise,
     declineExercise,
-  }), [ready, user, profile, partner, lastSplitDirection, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut, createPair, joinPair, pressProMode, completeSession, climbExercise, stepDownExercise, declineExercise]);
+    buyCosmetic,
+    equipCosmetic,
+    unequipSlot,
+  }), [ready, user, profile, partner, lastSplitDirection, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut, createPair, joinPair, pressProMode, completeSession, climbExercise, stepDownExercise, declineExercise, buyCosmetic, equipCosmetic, unequipSlot]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

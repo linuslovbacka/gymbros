@@ -30,7 +30,7 @@ function RestTokens({ count }: { count: number }) {
   );
 }
 
-export function StartScreen({ onTrain }: { onTrain: () => void }) {
+export function StartScreen({ onTrain, onLocker }: { onTrain: () => void; onLocker: () => void }) {
   const { profile, partner, pressProMode, signOut } = useApp();
   if (!profile) return null;
 
@@ -63,6 +63,7 @@ export function StartScreen({ onTrain }: { onTrain: () => void }) {
       </div>
 
       <button className="btn btn-primary btn-train" onClick={onTrain}>TRAIN</button>
+      <button className="btn btn-block" style={{ marginTop: 10 }} onClick={onLocker}>LOCKER</button>
     </div>
   );
 }

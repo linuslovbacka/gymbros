@@ -202,3 +202,51 @@
   background: var(--bg-3); border: 1px solid var(--line-bright); border-radius: 999px;
   padding: 10px 18px; font-size: 14px; z-index: 50;
 }
+
+/* ── Cosmetics / locker (Phase 4) ─────────────────────────────────────────── */
+.cosmetic-icon {
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--line-bright); border-radius: 10px;
+  background: var(--bg-2); flex: none;
+}
+.cosmetic-glyph { font-family: var(--font-display); font-size: 13px; letter-spacing: 0.06em; }
+
+.slot-row {
+  display: flex; align-items: center; gap: 12px;
+  border-bottom: 1px solid var(--line); padding: 10px 0;
+}
+.slot-label {
+  width: 78px; flex: none; font-size: 12px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted);
+}
+.slot-empty { color: var(--muted-2); font-size: 13px; }
+.icon-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.icon-cell { padding: 2px; border-radius: 12px; border: 2px solid transparent; background: none; }
+.icon-cell.on { border-color: var(--amber); }
+
+.shop-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.shop-card {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  border: 1px solid var(--line); border-radius: var(--radius-sm);
+  background: var(--bg-2); padding: 14px 10px; color: var(--text);
+}
+.shop-name { font-weight: 700; font-size: 14px; text-align: center; }
+.shop-rarity { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+.shop-price { font-family: var(--font-display); font-size: 14px; margin-top: 2px; }
+.shop-price.grit { color: var(--amber); }
+.shop-price.iron { color: var(--iron); }
+
+.sheet-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  display: flex; align-items: flex-end; justify-content: center; z-index: 60;
+}
+.sheet {
+  width: 100%; max-width: 440px; background: var(--bg-2);
+  border-top-left-radius: 18px; border-top-right-radius: 18px;
+  border: 1px solid var(--line-bright); padding: 20px 18px 26px;
+}
+.sheet-head { display: flex; gap: 14px; align-items: center; margin-bottom: 12px; }
+.sheet-name { font-family: var(--font-display); font-size: 20px; }
+.sheet-meta { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 2px; }
+.sheet-desc { color: var(--muted); font-size: 14px; line-height: 1.5; margin: 0 0 14px; }
+.sheet-error { color: #e0795f; font-size: 13px; margin-bottom: 10px; }

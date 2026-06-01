@@ -5,8 +5,9 @@ import { PairScreen } from './screens/PairScreen';
 import { StartScreen } from './screens/StartScreen';
 import { WorkoutScreen, type SessionDraft } from './screens/WorkoutScreen';
 import { DoneScreen } from './screens/DoneScreen';
+import { LockerScreen } from './screens/LockerScreen';
 
-type View = 'start' | 'workout' | 'done';
+type View = 'start' | 'workout' | 'done' | 'locker';
 
 export default function App() {
   const { ready, user, profile } = useApp();
@@ -31,5 +32,8 @@ export default function App() {
   if (view === 'done' && draft) {
     return <DoneScreen draft={draft} onClose={() => { setDraft(null); setView('start'); }} />;
   }
-  return <StartScreen onTrain={() => setView('workout')} />;
+  if (view === 'locker') {
+    return <LockerScreen onClose={() => setView('start')} />;
+  }
+  return <StartScreen onTrain={() => setView('workout')} onLocker={() => setView('locker')} />;
 }
