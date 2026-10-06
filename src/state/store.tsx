@@ -15,7 +15,8 @@ import { supabase, SUPABASE_ENABLED } from '../lib/supabase';
 import type { HabitsToday, Profile } from './types';
 import { WRITABLE_PROFILE_COLUMNS } from './types';
 import { proteinBaseFromWeightKg, proteinMetFromLogged, proteinTargetG } from '../content/diet';
-import type { Direction, Mode } from '../content/types';
+import type { Mode, SplitDay } from '../content/types';
+import { normalizeSplitDay } from '../content/workouts';
 import type { ProgramStage } from '../content/workouts';
 import { ironForSession, gritForSession } from '../engine/currency';
 import { applyProgress, entryHitCeiling, climb, stepDown, declineLevelUp, type LevelUpPrompt } from '../engine/leveling';
@@ -40,7 +41,7 @@ export interface CompleteSessionInput {
   routine?: import('../content/routines').WorkoutRoutine;
   mode: Mode;
   kind: 'full' | 'split';
-  splitDirection?: Direction;
+  splitDay?: SplitDay;
   entries: LoggedEntry[];
   feel: Feel;
   progress: ProgressAnswer;
@@ -61,7 +62,7 @@ interface AppState {
   user: User | null;
   profile: Profile | null;
   partner: Profile | null;
-  lastSplitDirection?: Direction;
+  lastSplitDay?: SplitDay;
   habitsToday: HabitsToday | null;
   partnerHabitsToday: HabitsToday | null;
   passwordRecovery: boolean;
@@ -71,7 +72,9 @@ interface AppState {
   resetProteinLog: () => Promise<void>;
   toggleWaterMet: () => Promise<void>;
   toggleStepsMet: () => Promise<void>;
+  toggleSleepMet: () => Promise<void>;
   toggleCreatineMet: () => Promise<void>;
+  toggleMobilityMet: () => Promise<void>;
   toggleSickDay: () => Promise<void>;
   setMaintenanceMode: (on: boolean) => void;
   updateBodyMetrics: (input: { body_weight_kg: number; body_height_cm: number }) => void;
@@ -105,7 +108,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [partner, setPartner] = useState<Profile | null>(null);
-  const [lastSplitDirection, setLastSplitDirection] = useState<Direction>();
+  const [lastSplitDay, setLastSplitDay] = useState<SplitDay>();
   const [passwordRecovery, setPasswordRecovery] = useState(false);
   const [habitsToday, setHabitsToday] = useState<HabitsToday | null>(null);
   const [partnerHabitsToday, setPartnerHabitsToday] = useState<HabitsToday | null>(null);
@@ -167,7 +170,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const date = todayISO();
     const { data, error } = await supabase
       .from('daily_habits')
-      .select('no_sugar, protein_met, protein_g, water_met, steps_met, creatine_met, sick')
+      .select('no_sugar, protein_met, protein_g, water_met, steps_met, sleep_met, creatine_met, mobility_met, sick')
       .eq('user_id', uid)
       .eq('date', date)
       .maybeSingle();
@@ -179,7 +182,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         protein_g: 0,
         water_met: false,
         steps_met: false,
+        sleep_met: false,
         creatine_met: false,
+        mobility_met: false,
         sick: false,
       };
     }
@@ -189,7 +194,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       protein_g: data?.protein_g ?? 0,
       water_met: data?.water_met ?? false,
       steps_met: data?.steps_met ?? false,
+      sleep_met: data?.sleep_met ?? false,
       creatine_met: data?.creatine_met ?? false,
+      mobility_met: data?.mobility_met ?? false,
       sick: data?.sick ?? false,
     };
   }, []);
@@ -204,7 +211,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       protein_g: patch.protein_g ?? habitsToday?.protein_g ?? 0,
       water_met: patch.water_met ?? habitsToday?.water_met ?? false,
       steps_met: patch.steps_met ?? habitsToday?.steps_met ?? false,
+      sleep_met: patch.sleep_met ?? habitsToday?.sleep_met ?? false,
       creatine_met: patch.creatine_met ?? habitsToday?.creatine_met ?? false,
+      mobility_met: patch.mobility_met ?? habitsToday?.mobility_met ?? false,
       sick: patch.sick ?? habitsToday?.sick ?? false,
     };
     setHabitsToday(next);
@@ -248,8 +257,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await upsertHabits({ steps_met: !(habitsToday?.steps_met ?? false) });
   }, [habitsToday, upsertHabits]);
 
+  const toggleSleepMet = useCallback(async () => {
+    await upsertHabits({ sleep_met: !(habitsToday?.sleep_met ?? false) });
+  }, [habitsToday, upsertHabits]);
+
   const toggleCreatineMet = useCallback(async () => {
     await upsertHabits({ creatine_met: !(habitsToday?.creatine_met ?? false) });
+  }, [habitsToday, upsertHabits]);
+
+  const toggleMobilityMet = useCallback(async () => {
+    await upsertHabits({ mobility_met: !(habitsToday?.mobility_met ?? false) });
   }, [habitsToday, upsertHabits]);
 
   const toggleSickDay = useCallback(async () => {
@@ -285,7 +302,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .order('created_at', { ascending: false })
       .limit(1);
     const split = data?.[0]?.split as string | undefined;
-    if (split && ['up', 'forward', 'down'].includes(split)) setLastSplitDirection(split as Direction);
+    const day = normalizeSplitDay(split);
+    if (day) setLastSplitDay(day);
   }, []);
 
   // Auth bootstrap
@@ -352,7 +370,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             protein_g?: number;
             water_met?: boolean;
             steps_met?: boolean;
+            sleep_met?: boolean;
             creatine_met?: boolean;
+            mobility_met?: boolean;
             sick?: boolean;
           };
           if (!row?.user_id || row.user_id === user.id) return;
@@ -363,7 +383,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
               protein_g: row.protein_g ?? 0,
               water_met: row.water_met ?? false,
               steps_met: row.steps_met ?? false,
+              sleep_met: row.sleep_met ?? false,
               creatine_met: row.creatine_met ?? false,
+              mobility_met: row.mobility_met ?? false,
               sick: row.sick ?? false,
             });
           }
@@ -431,34 +453,53 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const p = profileRef.current;
     if (!p) throw new Error('no profile');
 
+    const isMobility = input.routine === 'mobility';
+
     const ironEarned = ironForSession(input.entries);
     const ceilingCount = input.entries.filter(entryHitCeiling).length;
     const baseGrit = gritForSession(ceilingCount);
 
-    // PR detection runs against the pre-update bests, then leveling applies its
-    // own ceiling/rung changes on top — they touch disjoint fields per exercise.
-    const { state: afterPR, prs } = detectPRs(p.exercise_state, input.entries);
-    const { state: nextExerciseState, prompts } = applyProgress(afterPR, input.entries, input.progress);
+    let nextExerciseState = p.exercise_state;
+    let prompts: LevelUpPrompt[] = [];
+    let prs: PR[] = [];
+    if (!isMobility) {
+      const { state: afterPR, prs: detected } = detectPRs(p.exercise_state, input.entries);
+      const applied = applyProgress(afterPR, input.entries, input.progress);
+      nextExerciseState = applied.state;
+      prompts = applied.prompts;
+      prs = detected;
+    }
     const prCount = p.pr_count + prs.length;
 
     let programStage = p.program_stage;
-    if (input.mode === 'home' && programStage !== 'standard') {
+    if (!isMobility && input.mode === 'home' && programStage !== 'standard') {
       programStage = STAGE_AFTER[programStage];
     }
 
     const today = todayISO();
     const now = new Date();
-    // Reconcile any lapse up to now, then apply this session on top: advance
-    // recovery / de-rust, count comebacks, and resume the streak (spec section 9).
-    const before = reconcileLapse(p, now);
-    const rec = applySessionToRust(
-      before.rustState,
-      { streakCount: p.streak_count, streakLastDate: p.streak_last_date, today },
-      now,
-    );
-    const streakCount = rec.streakCount;
-    const restMonth = rec.restTokensMonth;
-    const restTokens = rec.restTokens;
+    let streakCount = p.streak_count;
+    let streakLastDate = p.streak_last_date;
+    let restMonth = p.rest_tokens_month;
+    let restTokens = p.rest_tokens;
+    let rustState = p.rust_state;
+    let justReturned = false;
+    let deRusted = false;
+    if (!isMobility) {
+      const before = reconcileLapse(p, now);
+      const rec = applySessionToRust(
+        before.rustState,
+        { streakCount: p.streak_count, streakLastDate: p.streak_last_date, today },
+        now,
+      );
+      streakCount = rec.streakCount;
+      streakLastDate = today;
+      restMonth = rec.restTokensMonth;
+      restTokens = rec.restTokens;
+      rustState = rec.rustState;
+      justReturned = rec.justReturned;
+      deRusted = rec.deRusted;
+    }
 
     // Achievement evaluation needs recent history (week/month windows). Pull the
     // last 31 days and prepend the session we're about to log.
@@ -517,9 +558,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       accountAgeDays,
       alreadyUnlocked,
       recentSessions,
-      justReturned: rec.justReturned,
-      deRusted: rec.deRusted,
-      comebackCount: rec.rustState.comebackCount,
+      justReturned,
+      deRusted,
+      comebackCount: rustState.comebackCount,
       partnerTrainedToday,
       bothStreak14,
       combinedWeekIron,
@@ -542,15 +583,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       grit: p.grit + gritEarned,
       exercise_state: nextExerciseState,
       program_stage: programStage,
-      days_trained: p.days_trained + 1,
+      days_trained: isMobility ? p.days_trained : p.days_trained + 1,
       pr_count: prCount,
       unlocked_achievements: unlockedAchievements,
       owned_cosmetics: ownedCosmetics,
       streak_count: streakCount,
-      streak_last_date: today,
+      streak_last_date: isMobility ? p.streak_last_date : streakLastDate,
       rest_tokens: restTokens,
       rest_tokens_month: restMonth,
-      rust_state: rec.rustState,
+      rust_state: rustState,
     });
 
     if (SUPABASE_ENABLED) {
@@ -558,7 +599,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         user_id: p.user_id,
         pair_id: p.pair_id,
         mode: input.mode,
-        split: input.kind === 'split' ? (input.splitDirection ?? null) : null,
+        split: input.kind === 'split' ? (input.splitDay ?? null) : null,
         entries: input.entries,
         feel: input.feel,
         progress_answer: input.progress,
@@ -572,14 +613,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (
       (input.routine === 'main' || !input.routine) &&
       input.kind === 'split' &&
-      input.splitDirection
+      input.splitDay
     ) {
-      setLastSplitDirection(input.splitDirection);
+      setLastSplitDay(input.splitDay);
+    }
+    if (isMobility) {
+      await upsertHabits({ mobility_met: true });
     }
     await flushSave();
 
     return { ironEarned: ironTotal, gritEarned, prompts, prs, achievements: unlocked };
-  }, [patchProfile, flushSave]);
+  }, [patchProfile, flushSave, upsertHabits]);
 
   const climbExercise = useCallback((id: string) => {
     const p = profileRef.current; if (!p) return;
@@ -632,7 +676,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     user,
     profile,
     partner,
-    lastSplitDirection,
+    lastSplitDay,
     habitsToday,
     partnerHabitsToday,
     passwordRecovery,
@@ -642,7 +686,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     resetProteinLog,
     toggleWaterMet,
     toggleStepsMet,
+    toggleSleepMet,
     toggleCreatineMet,
+    toggleMobilityMet,
     toggleSickDay,
     setMaintenanceMode,
     updateBodyMetrics,
@@ -661,7 +707,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     buyCosmetic,
     equipCosmetic,
     unequipSlot,
-  }), [ready, user, profile, partner, lastSplitDirection, habitsToday, partnerHabitsToday, passwordRecovery, toggleNoSugar, toggleProteinMet, addProteinGrams, resetProteinLog, toggleWaterMet, toggleStepsMet, toggleCreatineMet, toggleSickDay, setMaintenanceMode, updateBodyMetrics, signInWithEmail, signUpWithEmail, resetPasswordForEmail, updatePassword, signOut, createPair, joinPair, pressProMode, completeSession, climbExercise, stepDownExercise, declineExercise, buyCosmetic, equipCosmetic, unequipSlot]);
+  }), [ready, user, profile, partner, lastSplitDay, habitsToday, partnerHabitsToday, passwordRecovery, toggleNoSugar, toggleProteinMet, addProteinGrams, resetProteinLog, toggleWaterMet, toggleStepsMet, toggleSleepMet, toggleCreatineMet, toggleMobilityMet, toggleSickDay, setMaintenanceMode, updateBodyMetrics, signInWithEmail, signUpWithEmail, resetPasswordForEmail, updatePassword, signOut, createPair, joinPair, pressProMode, completeSession, climbExercise, stepDownExercise, declineExercise, buyCosmetic, equipCosmetic, unequipSlot]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

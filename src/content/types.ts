@@ -4,7 +4,11 @@
 export type Track = 'calisthenics' | 'gym';
 export type Body = 'upper' | 'lower' | 'core' | 'skill';
 export type Mode = 'home' | 'gym';
+/** Movement plane — used for full sessions (all three in one workout). */
 export type Direction = 'up' | 'forward' | 'down';
+
+/** Alternate split days: upper vs lower body. */
+export type SplitDay = 'upper' | 'lower';
 export type Force = 'pull' | 'push';
 
 /** One rung on a variation ladder (calisthenics) — see spec section 6. */

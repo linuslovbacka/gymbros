@@ -44,7 +44,7 @@ Aligns with **Gröda / DLKK** (Next on Vercel) while keeping Gymbros’s own Sup
 
 **Manual follow-up:** apply [supabase/migrations/20260605_daily_habits.sql](../supabase/migrations/20260605_daily_habits.sql) on Supabase if not already applied (habit toggles need the table).
 
-**Next product work (post-MVP):** turn off `MVP_MODE` in `src/lib/mvp.ts` when ready for locker/achievements; Phase 1.5 sleep/steps toggles per [MVP.md](./MVP.md).
+**Next product work (post-MVP):** turn off `MVP_MODE` in `src/lib/mvp.ts` when ready for locker/achievements; optional habit add-ons beyond sleep/steps/creatine per [MVP.md](./MVP.md).
 
 ---
 

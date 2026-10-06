@@ -15,12 +15,23 @@ export const PERFORMANCE_BULK_PROTEIN = {
 
 export const WATER_TARGET_LABEL = '1.5–2 L / day';
 
+export const SLEEP_TARGET_LABEL = '7+ h last night';
+
+export const STEPS_TARGET_LABEL = '~10k or walk after meals';
+
+/** Diet screen — ties habits to sleep (no biomarker tracking). */
+export const DIET_HABITS_WHY_LEAD =
+  'Poor sleep and late caffeine make no-sugar, protein, and training harder. Protect sleep first, then stack the daily habits.';
+
+/** Home no-sugar row subtitle. */
+export const NO_SUGAR_HABIT_HINT = 'Plan before evening';
+
 /** Standard creatine monohydrate maintenance dose (g/day). */
 export const CREATINE_DAILY_G = 5;
 
 export const CREATINE_GUIDE = {
   title: 'Creatine',
-  targetLabel: `${CREATINE_DAILY_G} g / day`,
+  targetLabel: `${CREATINE_DAILY_G} g/day`,
   summary:
     '5 g per day of creatine monohydrate is the usual maintenance dose — safe for most healthy people and well supported for strength and training.',
   bullets: [
@@ -168,7 +179,8 @@ export const DIET_RESTRICTIONS: DietRestriction[] = [
   {
     id: 'no_sugar',
     title: 'No sugar',
-    detail: 'No sweets, soda, or added sugar for the day. Whole fruit is fine.',
+    detail:
+      'No sweets, soda, or added sugar for the day. Whole fruit is fine. Decide before cravings hit — evening-you will always sell you out.',
   },
   {
     id: 'salt',
@@ -178,7 +190,8 @@ export const DIET_RESTRICTIONS: DietRestriction[] = [
   {
     id: 'caffeine',
     title: 'Coffee & tea',
-    detail: 'Go easy on caffeine, especially late in the day. Plant or low-fat milk if you use milk.',
+    detail:
+      'Go easy on caffeine; try none after ~2 pm (half-life ~6 h). Plant or low-fat milk if you use milk.',
   },
 ];
 
@@ -234,7 +247,17 @@ export const HAND_RULE_PORTIONS: HandRulePortion[] = [
 ];
 
 export const SICK_DAY_TRAINING_NOTE =
-  'Training is skipped today. Keep no-sugar, protein, and water habits — mark “I’m sick” on home to rest.';
+  'Training is skipped today. Keep sleep, no-sugar, protein, water, steps, creatine, and mobility — mark “I’m sick” on home to rest.';
+
+/** Static reference — October plan eating window & fuel (no tracking in app). */
+export const DIET_PROGRAM_TIPS = {
+  title: 'Program reference',
+  items: [
+    'Try to finish eating by ~19:00 when you can — easier sleep and morning appetite.',
+    'Rough maintenance often lands ~2,400–2,800 kcal for active men; adjust by scale and energy.',
+    'Protein shake or skyr helps close the gap when whole food is short — log grams on home.',
+  ],
+} as const;
 
 export const SICK_DAY_SCHEDULE_NOTE =
   'When you’re sick, don’t catch up missed workouts — rejoin the current day on the schedule when you’re well.';

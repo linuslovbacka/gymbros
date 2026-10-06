@@ -11,6 +11,7 @@ import {
 import { ExerciseGuide } from '../components/ExerciseGuide';
 import { getExercise } from '../content/exercises';
 import { JUMP_ROPE_WARMUP_GUIDE, NORWEGIAN_4X4_GUIDE } from '../content/conditioning';
+import { MOBILITY_SESSION_INTRO, MOBILITY_STRETCH_GUIDE } from '../content/mobility';
 import {
   buildJumpRopeWarmupItem,
   buildRoutineWorkout,
@@ -18,8 +19,8 @@ import {
   strengthRoutine,
   type WorkoutRoutine,
 } from '../content/routines';
-import { nextSplitDirection, type WorkoutItem } from '../content/workouts';
-import type { Direction, Mode } from '../content/types';
+import { nextSplitDay, SPLIT_DAY_LABEL, type WorkoutItem } from '../content/workouts';
+import type { Mode, SplitDay } from '../content/types';
 import type { LoggedEntry } from '../engine/types';
 import { SupersetLogPhase } from '@/components/SupersetLogPhase';
 import { canShowGluteRoutine } from '@/lib/personal-routines';
@@ -30,14 +31,14 @@ export interface SessionDraft {
   mode: Mode;
   kind: 'full' | 'split';
   flow?: 'classic' | 'superset';
-  splitDirection?: Direction;
+  splitDay?: SplitDay;
   entries: LoggedEntry[];
 }
 
 type Phase = 'routine' | 'mode' | 'homekind' | 'warmup' | 'log';
 
 function parseInitialRoutine(raw: string | null | undefined, showGlutes: boolean): WorkoutRoutine | null {
-  if (raw === 'main' || raw === 'skills' || raw === 'conditioning') return raw;
+  if (raw === 'main' || raw === 'skills' || raw === 'conditioning' || raw === 'mobility') return raw;
   if (raw === 'glutes' && showGlutes) return 'glutes';
   return null;
 }
@@ -49,7 +50,7 @@ function goToLogOrWarmup(
   mode: Mode,
   setKind: (k: 'full' | 'split') => void,
 ) {
-  if (routine === 'conditioning') {
+  if (routine === 'conditioning' || routine === 'mobility') {
     setPhase('log');
     return;
   }
@@ -75,14 +76,14 @@ export function WorkoutScreen({
   /** From `/workout?routine=skills` */
   initialRoutineParam?: string | null;
 }) {
-  const { user, profile, lastSplitDirection } = useApp();
+  const { user, profile, lastSplitDay } = useApp();
   const showGlutes = canShowGluteRoutine(user?.id);
 
   const preset = parseInitialRoutine(initialRoutineParam, showGlutes);
 
   const [routine, setRoutine] = useState<WorkoutRoutine>(preset ?? 'main');
   const [phase, setPhase] = useState<Phase>(() => {
-    if (preset === 'conditioning') return 'log';
+    if (preset === 'conditioning' || preset === 'mobility') return 'log';
     if (preset) return 'mode';
     return 'routine';
   });
@@ -90,7 +91,7 @@ export function WorkoutScreen({
   const [kind, setKind] = useState<'full' | 'split'>('full');
   const [includeJumpRope, setIncludeJumpRope] = useState(false);
 
-  const splitDirection = useMemo(() => nextSplitDirection(lastSplitDirection), [lastSplitDirection]);
+  const splitDay = useMemo(() => nextSplitDay(lastSplitDay), [lastSplitDay]);
 
   const items = useMemo<WorkoutItem[]>(() => {
     if (!profile || phase !== 'log') return [];
@@ -99,20 +100,20 @@ export function WorkoutScreen({
       stage: profile.program_stage,
       state: profile.exercise_state,
       kind,
-      splitDirection,
+      splitDay,
     });
     if (includeJumpRope && strengthRoutine(routine)) {
       return [buildJumpRopeWarmupItem(profile.exercise_state), ...base];
     }
     return base;
-  }, [profile, phase, routine, mode, kind, splitDirection, includeJumpRope]);
+  }, [profile, phase, routine, mode, kind, splitDay, includeJumpRope]);
 
   if (!profile) return null;
 
   if (phase === 'routine') {
     const options: WorkoutRoutine[] = showGlutes
-      ? ['main', 'skills', 'glutes', 'conditioning']
-      : ['main', 'skills', 'conditioning'];
+      ? ['main', 'skills', 'glutes', 'mobility', 'conditioning']
+      : ['main', 'skills', 'mobility', 'conditioning'];
     return (
       <div className="screen">
         <Topbar onBack={onCancel} title="What today?" />
@@ -126,7 +127,7 @@ export function WorkoutScreen({
                 sub={sub}
                 onClick={() => {
                   setRoutine(id);
-                  if (id === 'conditioning') {
+                  if (id === 'conditioning' || id === 'mobility') {
                     setMode('home');
                     setKind('full');
                     setPhase('log');
@@ -167,8 +168,12 @@ export function WorkoutScreen({
             sub="Weights and machines"
             onClick={() => {
               setMode('gym');
-              setKind('full');
-              goToLogOrWarmup(routine, setPhase, profile, 'gym', setKind);
+              if (routine === 'main' && profile.program_stage === 'standard') {
+                setPhase('homekind');
+              } else {
+                setKind('full');
+                goToLogOrWarmup(routine, setPhase, profile, 'gym', setKind);
+              }
             }}
           />
         </div>
@@ -193,7 +198,7 @@ export function WorkoutScreen({
           {!isBeginner && (
             <ChoiceBtn
               label="Split"
-              sub={`Next up: ${splitDirection.toUpperCase()}`}
+              sub={`Next up: ${SPLIT_DAY_LABEL[splitDay]}`}
               onClick={() => {
                 setKind('split');
                 setPhase('warmup');
@@ -210,7 +215,7 @@ export function WorkoutScreen({
       <div className="screen">
         <Topbar
           onBack={() => {
-            if (routine === 'main' && mode === 'home' && profile.program_stage === 'standard') {
+            if (routine === 'main' && profile.program_stage === 'standard') {
               setPhase('homekind');
             } else {
               setPhase('mode');
@@ -242,8 +247,12 @@ export function WorkoutScreen({
   }
 
   const logBack = () => {
+    if (routine === 'mobility' || routine === 'conditioning') {
+      setPhase('routine');
+      return;
+    }
     if (strengthRoutine(routine)) setPhase('warmup');
-    else if (routine === 'main' && mode === 'home') setPhase('homekind');
+    else if (routine === 'main' && profile.program_stage === 'standard') setPhase('homekind');
     else setPhase('mode');
   };
 
@@ -256,7 +265,7 @@ export function WorkoutScreen({
         routine={routine}
         mode={mode}
         kind={kind}
-        splitDirection={splitDirection}
+        splitDay={splitDay}
         onBack={logBack}
         onFinish={onFinish}
       />
@@ -269,7 +278,7 @@ export function WorkoutScreen({
       routine={routine}
       mode={mode}
       kind={kind}
-      splitDirection={splitDirection}
+      splitDay={splitDay}
       onBack={logBack}
       onFinish={onFinish}
     />
@@ -281,7 +290,7 @@ function LogPhase({
   routine,
   mode,
   kind,
-  splitDirection,
+  splitDay,
   onBack,
   onFinish,
 }: {
@@ -289,7 +298,7 @@ function LogPhase({
   routine: WorkoutRoutine;
   mode: Mode;
   kind: 'full' | 'split';
-  splitDirection: Direction;
+  splitDay: SplitDay;
   onBack: () => void;
   onFinish: (d: SessionDraft) => void;
 }) {
@@ -374,7 +383,7 @@ function LogPhase({
       mode,
       kind,
       flow: 'classic',
-      splitDirection: kind === 'split' ? splitDirection : undefined,
+      splitDay: kind === 'split' ? splitDay : undefined,
       entries,
     });
   }
@@ -401,11 +410,24 @@ function LogPhase({
         </div>
       )}
 
+      {routine === 'mobility' && idx === 0 && (
+        <div className="conditioning-guide">
+          <p className="conditioning-guide-title">{MOBILITY_SESSION_INTRO.title}</p>
+          <p className="muted">{MOBILITY_SESSION_INTRO.intro}</p>
+          <p className="muted tiny">{MOBILITY_SESSION_INTRO.when}</p>
+        </div>
+      )}
+
       <div className="exercise-card">
         <ExerciseGuide exerciseId={item.exerciseId} rungName={item.rungName} />
         {item.exerciseId === 'norwegian_4x4' && (
           <p className="interval-recovery-note muted">
             After you log this interval, take ~3 minutes easy before the next set.
+          </p>
+        )}
+        {MOBILITY_STRETCH_GUIDE[item.exerciseId] && (
+          <p className="interval-recovery-note muted">
+            {MOBILITY_STRETCH_GUIDE[item.exerciseId].cue}
           </p>
         )}
         <h2 className="exercise-name">{item.name}</h2>

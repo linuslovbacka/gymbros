@@ -4,20 +4,23 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { useApp } from '@/state/store';
 import {
-  DIRECTION_ORDER,
   describeBeginnerWeek,
   describeFullSession,
   describeSplitDay,
+  nextSplitDay,
+  SPLIT_DAY_ORDER,
   todayPreview,
 } from '@/content/schedule';
 import type { Mode } from '@/content/types';
 import { SICK_DAY_SCHEDULE_NOTE } from '@/content/diet';
+import { ROUTINE_LABELS } from '@/content/routines';
 import { HabitTimeline, weekTimelineMap } from '@/components/HabitTimeline';
+import { MobilityGuideSheet } from '@/components/MobilityGuideSheet';
 import { ScheduleWeekStrip } from '@/components/ScheduleWeekStrip';
 import { useHabitHistory } from '@/hooks/useHabitHistory';
 
 export function ScheduleScreen() {
-  const { user, profile, lastSplitDirection, habitsToday } = useApp();
+  const { user, profile, lastSplitDay, habitsToday } = useApp();
   const { days: historyDays, loading: historyLoading } = useHabitHistory(
     user?.id,
     profile,
@@ -28,6 +31,7 @@ export function ScheduleScreen() {
   const sickToday = habitsToday?.sick ?? false;
   const [previewMode, setPreviewMode] = useState<Mode>('home');
   const [previewKind, setPreviewKind] = useState<'full' | 'split'>('full');
+  const [mobilitySheetOpen, setMobilitySheetOpen] = useState(false);
 
   const stage = profile?.program_stage ?? 'w1';
   const state = profile?.exercise_state ?? {};
@@ -39,9 +43,9 @@ export function ScheduleScreen() {
       kind: previewKind,
       stage: profile.program_stage,
       state: profile.exercise_state,
-      lastSplitDirection,
+      lastSplitDay,
     });
-  }, [profile, previewMode, previewKind, lastSplitDirection]);
+  }, [profile, previewMode, previewKind, lastSplitDay]);
 
   if (!profile) return null;
 
@@ -60,6 +64,22 @@ export function ScheduleScreen() {
         <h2 className="section-title">This week</h2>
         <ScheduleWeekStrip sickToday={sickToday} weekByDate={weekByDate} />
         {sickToday && <p className="muted schedule-sick-note">{SICK_DAY_SCHEDULE_NOTE}</p>}
+      </section>
+
+      <section className="stack">
+        <h2 className="section-title">TRAIN options</h2>
+        <p className="muted">
+          <strong>Main</strong> — full or upper/lower split. <strong>{ROUTINE_LABELS.skills.title}</strong> —{' '}
+          {ROUTINE_LABELS.skills.sub}. <strong>{ROUTINE_LABELS.mobility.title}</strong> — timed hips/hamstrings
+          session. <strong>{ROUTINE_LABELS.conditioning.title}</strong> — hard cardio when you want it (not every
+          split day).
+        </p>
+        <button type="button" className="btn" onClick={() => setMobilitySheetOpen(true)}>
+          Mobility & cooldown guide
+        </button>
+        <Link className="btn btn-primary" href="/workout?routine=mobility">
+          Start Mobility session
+        </Link>
       </section>
 
       <section className="stack">
@@ -130,45 +150,43 @@ export function ScheduleScreen() {
         </section>
       )}
 
-      {!isBeginner && previewMode === 'home' && (
+      {!isBeginner && (
         <>
           <section className="stack">
             <h2 className="section-title">Split days</h2>
-            {DIRECTION_ORDER.map((dir) => {
-              const day = describeSplitDay('home', dir);
-              const next = lastSplitDirection
-                ? DIRECTION_ORDER[(DIRECTION_ORDER.indexOf(lastSplitDirection) + 1) % 3]
-                : 'up';
+            {SPLIT_DAY_ORDER.map((dayKey) => {
+              const day = describeSplitDay(previewMode, dayKey);
+              const next = nextSplitDay(lastSplitDay);
               return (
-                <div key={dir} className="schedule-block">
+                <div key={dayKey} className="schedule-block">
                   <h3>
-                    {dir.toUpperCase()}
-                    {next === dir && previewKind === 'split' && (
+                    {day.label}
+                    {next === dayKey && previewKind === 'split' && (
                       <span className="chip"> Next split</span>
                     )}
                   </h3>
-                  <p className="muted">
-                    Pull: {day.pull} · Push: {day.push} · Core: {day.core}
-                  </p>
+                  <p className="muted">{day.exercises.join(' · ')}</p>
                 </div>
               );
             })}
           </section>
-          <section className="stack">
-            <h2 className="section-title">Full home session</h2>
-            <ul className="schedule-list">
-              {describeFullSession({
-                mode: 'home',
-                stage: 'standard',
-                state,
-                kind: 'full',
-              }).map((item) => (
-                <li key={item.exerciseId}>
-                  <strong>{item.name}</strong> — {item.prescription}
-                </li>
-              ))}
-            </ul>
-          </section>
+          {previewMode === 'home' && (
+            <section className="stack">
+              <h2 className="section-title">Full home session</h2>
+              <ul className="schedule-list">
+                {describeFullSession({
+                  mode: 'home',
+                  stage: 'standard',
+                  state,
+                  kind: 'full',
+                }).map((item) => (
+                  <li key={item.exerciseId}>
+                    <strong>{item.name}</strong> — {item.prescription}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </>
       )}
 
@@ -184,6 +202,8 @@ export function ScheduleScreen() {
           </ul>
         </section>
       )}
+
+      <MobilityGuideSheet open={mobilitySheetOpen} onClose={() => setMobilitySheetOpen(false)} />
     </div>
   );
 }

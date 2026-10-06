@@ -12,32 +12,38 @@ Full agent context: [HANDOFF.md](./HANDOFF.md).
 
 | Check | Behavior |
 |--------|----------|
+| Sleep | Toggle: **≥ 7 h** last night |
 | No sugar | Manual toggle: stayed sugar-free today |
 | Protein | Log grams on home; target from weight or **110 g** default (+25 g in **performance / bulk** on Diet) |
 | Water | Toggle: ~**1.5–2 L** for the day |
-| Training | Auto when workout logged — **excused** when **I’m sick today** is on |
-| Sick | Skips training for the day; diet + water habits still count (**3/3** max) |
+| Steps | Toggle: ~**10k** steps or post-meal walks / break up sitting |
+| Kreatin | Toggle: **5 g** creatine monohydrate for the day |
+| Mobility | Toggle: **5+ min** (or finish **TRAIN → Mobility**) |
+| Training | Auto when strength/cardio workout logged — **excused** when **I’m sick today** is on |
+| Sick | Skips training for the day; lifestyle habits still count (**7/7** max) |
 
-Show progress **3/3** (sick) or **4/4** (well). Partner’s checks under **Bro today**.
+Show progress **7/7** (sick) or **8/8** (well). Partner’s checks under **Bro today**.
+
+**Diet screen:** restrictions (no sugar, caffeine tip), performance/bulk, protein/BMI, creatine guide, protein alternatives overlay, and a short lead on sleep ↔ habits.
 
 **Home in MVP:** habits + **TRAIN** + **Diet** (restrictions/goals reference) + schedule/sign-out — no VS / avatars / battle chrome ([DEFERRED_BATTLE_UI.md](./DEFERRED_BATTLE_UI.md)).
 
 ### Schedule (`/schedule` after Next migration)
 
 - Beginner **W1 → W2 → W3** lists from `BEGINNER_PROGRAM`
-- Standard **split** days: Up / Forward / Down (`HOME_FRAMEWORK`)
+- Standard **split** days: **Upper body** / **Lower body** (alternates each split session)
 - **Full** home and gym session lists from `buildWorkout()`
 - **Today preview** must match what **TRAIN** loads
 
 ### Workout loop
 
 - Keep Home/Gym, Full/Split, exercise logging, feel + progress on done
-- **Extra routines:** **Skills** (everyone) and **Glute day** (home + gym lists; Glute entry only when `NEXT_PUBLIC_PERSONAL_GLUTES_USER_ID` matches your auth user id)
+- **Extra routines:** **Skills**, **Mobility** (timed stretch session), **Conditioning (4×4)**, and **Glute day** (home + gym lists; Glute entry only when `NEXT_PUBLIC_PERSONAL_GLUTES_USER_ID` matches your auth user id)
 - **Quiet done screen** in MVP — no achievement/currency theatre
 
 ### Data
 
-- `daily_habits(user_id, date, no_sugar, protein_met)` + RLS
+- `daily_habits(user_id, date, …)` — booleans for sleep, no_sugar, protein_met, water, steps, creatine, mobility_met, sick; `protein_g` + RLS
 - Same Supabase project as today
 
 ### Stack (with migration)
@@ -59,7 +65,7 @@ Next.js in-place, Tailwind tokens, GSAP (light), Supabase SSR — see HANDOFF.
 
 ## Phase 1.5 (easy add-ons)
 
-- Sleep ≥ 7 h, ~10k steps — extra booleans on `daily_habits`
+- ~~Sleep ≥ 7 h, ~10k steps~~ — shipped on home (`sleep_met`, `steps_met`)
 
 Handbook-derived items **not** planned: see exclusions in [INSPIRATION_PROGRAM_HANDBOOK.md](./INSPIRATION_PROGRAM_HANDBOOK.md).
 

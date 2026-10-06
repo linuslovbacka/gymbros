@@ -3,7 +3,7 @@ import { getExercise } from './exercises';
 import type { ExerciseState, WorkoutItem } from './workouts';
 import { buildWorkout, type BuildOptions } from './workouts';
 
-export type WorkoutRoutine = 'main' | 'skills' | 'glutes' | 'conditioning';
+export type WorkoutRoutine = 'main' | 'skills' | 'glutes' | 'conditioning' | 'mobility';
 
 export const ROUTINE_LABELS: Record<WorkoutRoutine, { title: string; sub: string }> = {
   main: {
@@ -21,6 +21,10 @@ export const ROUTINE_LABELS: Record<WorkoutRoutine, { title: string; sub: string
   conditioning: {
     title: 'Conditioning (4×4)',
     sub: 'Norwegian 4×4 — VO₂ max & heart health',
+  },
+  mobility: {
+    title: 'Mobility',
+    sub: 'Hips & hamstrings — follow the timer',
   },
 };
 
@@ -128,6 +132,24 @@ function buildConditioningWorkout(state: ExerciseState): WorkoutItem[] {
   ];
 }
 
+function buildMobilityWorkout(state: ExerciseState): WorkoutItem[] {
+  const hold = (id: string, prescription: string, low: number, high: number, perSide?: boolean) =>
+    fixedItem(
+      id,
+      { sets: 1, low, high, timed: true, prescription, perSide },
+      state,
+    );
+
+  return [
+    hold('mobility_prep', '1 x 90–120 s prep', 90, 120),
+    hold('mobility_pike', '1 x 45–75 s hold', 45, 75),
+    hold('mobility_pancake', '1 x 45–75 s hold', 45, 75),
+    hold('mobility_front_split', '1 x 45–75 s each side', 45, 75, true),
+    hold('mobility_side_split', '1 x 45–75 s hold', 45, 75),
+    hold('mobility_pigeon', '1 x 45–75 s each side', 45, 75, true),
+  ];
+}
+
 /** Gym glute day — machines + barbell pattern from your template. */
 function buildGlutesGymWorkout(state: ExerciseState): WorkoutItem[] {
   return [
@@ -158,5 +180,6 @@ export function buildRoutineWorkout(
     return mode === 'gym' ? buildGlutesGymWorkout(state) : buildGlutesHomeWorkout(state);
   }
   if (routine === 'conditioning') return buildConditioningWorkout(state);
+  if (routine === 'mobility') return buildMobilityWorkout(state);
   return buildWorkout(opts);
 }

@@ -4,7 +4,15 @@ import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { ProteinLogPanel, ProteinLogSummary } from '@/components/ProteinLogPanel';
-import { CREATINE_GUIDE, proteinTargetG, WATER_TARGET_LABEL } from '@/content/diet';
+import {
+  CREATINE_GUIDE,
+  NO_SUGAR_HABIT_HINT,
+  proteinTargetG,
+  SLEEP_TARGET_LABEL,
+  STEPS_TARGET_LABEL,
+  WATER_TARGET_LABEL,
+} from '@/content/diet';
+import { MOBILITY_HABIT_LABEL } from '@/content/mobility';
 import { habitScore } from '@/lib/habits-score';
 import { useApp } from '@/state/store';
 import type { HabitsToday, Profile } from '@/state/types';
@@ -16,15 +24,15 @@ function trainingDone(profile: Profile | null): boolean {
   return profile?.streak_last_date === TODAY();
 }
 
-const STEPS_TARGET_LABEL = '~10,000 steps / day';
-
 const emptyHabits: HabitsToday = {
   no_sugar: false,
   protein_met: false,
   protein_g: 0,
   water_met: false,
   steps_met: false,
+  sleep_met: false,
   creatine_met: false,
+  mobility_met: false,
   sick: false,
 };
 
@@ -66,10 +74,8 @@ function CheckRow({ label, sub, done, onToggle, readOnly }: CheckProps) {
       <span className="daily-check-mark" ref={markRef} aria-hidden="true">
         {done ? '✓' : '○'}
       </span>
-      <span>
-        <span className="daily-check-label">{label}</span>
-        {sub && <span className="daily-check-sub muted">{sub}</span>}
-      </span>
+      <span className="daily-check-label">{label}</span>
+      {sub ? <span className="daily-check-sub muted">{sub}</span> : null}
     </Tag>
   );
 }
@@ -82,7 +88,9 @@ export function DailyChecks({ partnerProfile }: { partnerProfile?: Profile | nul
     toggleNoSugar,
     toggleWaterMet,
     toggleStepsMet,
+    toggleSleepMet,
     toggleCreatineMet,
+    toggleMobilityMet,
     toggleSickDay,
   } = useApp();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -92,12 +100,12 @@ export function DailyChecks({ partnerProfile }: { partnerProfile?: Profile | nul
   useGSAP(
     () => {
       if (prefersReducedMotion() || !rootRef.current) return;
-      gsap.from(rootRef.current.querySelectorAll('.daily-check, .protein-log--home'), {
+      gsap.from(rootRef.current.querySelectorAll('.daily-checks-stack > *'), {
         opacity: 0,
-        y: 8,
         duration: NOTHING_DURATION_MED,
-        stagger: 0.05,
+        stagger: 0.04,
         ease: NOTHING_EASE,
+        clearProps: 'opacity',
       });
     },
     { scope: rootRef },
@@ -144,37 +152,56 @@ export function DailyChecks({ partnerProfile }: { partnerProfile?: Profile | nul
         {mine.sick ? "I'm sick — rest day" : "I'm sick today (skip training)"}
       </button>
 
-      <CheckRow label="No sugar" done={mine.no_sugar} onToggle={() => void toggleNoSugar()} />
-      <ProteinLogPanel profile={profile} variant="home" />
-      <CheckRow
-        label="Water"
-        sub={WATER_TARGET_LABEL}
-        done={mine.water_met}
-        onToggle={() => void toggleWaterMet()}
-      />
-      <CheckRow
-        label="Steps"
-        sub={STEPS_TARGET_LABEL}
-        done={mine.steps_met}
-        onToggle={() => void toggleStepsMet()}
-      />
-      <CheckRow
-        label="Kreatin"
-        sub={CREATINE_GUIDE.targetLabel}
-        done={mine.creatine_met}
-        onToggle={() => void toggleCreatineMet()}
-      />
-
-      {mine.sick ? (
-        <CheckRow label="Training" sub="Rest day — excused" done readOnly />
-      ) : (
-        <CheckRow label="Training" done={trained} readOnly />
-      )}
+      <div className="daily-checks-stack">
+        <CheckRow
+          label="Sleep"
+          sub={SLEEP_TARGET_LABEL}
+          done={mine.sleep_met}
+          onToggle={() => void toggleSleepMet()}
+        />
+        <CheckRow
+          label="No sugar"
+          sub={NO_SUGAR_HABIT_HINT}
+          done={mine.no_sugar}
+          onToggle={() => void toggleNoSugar()}
+        />
+        <ProteinLogPanel profile={profile} variant="home" />
+        <CheckRow
+          label="Water"
+          sub={WATER_TARGET_LABEL}
+          done={mine.water_met}
+          onToggle={() => void toggleWaterMet()}
+        />
+        <CheckRow
+          label="Steps"
+          sub={STEPS_TARGET_LABEL}
+          done={mine.steps_met}
+          onToggle={() => void toggleStepsMet()}
+        />
+        <CheckRow
+          label="Kreatin"
+          sub={CREATINE_GUIDE.targetLabel}
+          done={mine.creatine_met}
+          onToggle={() => void toggleCreatineMet()}
+        />
+        <CheckRow
+          label="Mobility"
+          sub={MOBILITY_HABIT_LABEL}
+          done={mine.mobility_met}
+          onToggle={() => void toggleMobilityMet()}
+        />
+        {mine.sick ? (
+          <CheckRow label="Training" sub="Rest day" done readOnly />
+        ) : (
+          <CheckRow label="Training" done={trained} readOnly />
+        )}
+      </div>
 
       {bro && (
         <div className="daily-checks-partner muted">
           <div className="tiny">Bro today</div>
           {bro.habits.sick && <div className="tiny sick-bro-note">Rest day (sick)</div>}
+          <CheckRow label="Sleep" done={bro.habits.sleep_met} readOnly />
           <CheckRow label="No sugar" done={bro.habits.no_sugar} readOnly />
           <ProteinLogSummary
             logged={bro.habits.protein_g ?? 0}
@@ -184,6 +211,7 @@ export function DailyChecks({ partnerProfile }: { partnerProfile?: Profile | nul
           <CheckRow label="Water" done={bro.habits.water_met} readOnly />
           <CheckRow label="Steps" done={bro.habits.steps_met} readOnly />
           <CheckRow label="Kreatin" done={bro.habits.creatine_met} readOnly />
+          <CheckRow label="Mobility" done={bro.habits.mobility_met} readOnly />
           {bro.habits.sick ? (
             <CheckRow label="Training" sub="Rest" done readOnly />
           ) : (

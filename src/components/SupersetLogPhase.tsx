@@ -11,7 +11,7 @@ import {
 } from '@/content/progressive-overload';
 import { ROUTINE_LABELS, type WorkoutRoutine } from '@/content/routines';
 import type { WorkoutItem } from '@/content/workouts';
-import type { Direction, Mode } from '@/content/types';
+import type { Mode, SplitDay } from '@/content/types';
 import type { LoggedEntry } from '@/engine/types';
 import {
   buildSupersetBlocks,
@@ -28,7 +28,7 @@ export function SupersetLogPhase({
   routine,
   mode,
   kind,
-  splitDirection,
+  splitDay,
   onBack,
   onFinish,
 }: {
@@ -36,7 +36,7 @@ export function SupersetLogPhase({
   routine: WorkoutRoutine;
   mode: Mode;
   kind: 'full' | 'split';
-  splitDirection: Direction;
+  splitDay: SplitDay;
   onBack: () => void;
   onFinish: (d: SessionDraft) => void;
 }) {
@@ -274,7 +274,7 @@ export function SupersetLogPhase({
       mode,
       kind,
       flow: 'superset',
-      splitDirection: kind === 'split' ? splitDirection : undefined,
+      splitDay: kind === 'split' ? splitDay : undefined,
       entries,
     });
   }

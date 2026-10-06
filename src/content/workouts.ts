@@ -1,4 +1,4 @@
-import type { Direction, Mode } from './types';
+import type { Direction, Mode, SplitDay } from './types';
 import { getExercise } from './exercises';
 
 // ─── Push/pull framework (spec section 4) ────────────────────────────────────
@@ -23,6 +23,25 @@ export const SUPPLEMENTARY = {
 };
 
 export const DIRECTION_ORDER: Direction[] = ['up', 'forward', 'down'];
+
+export const SPLIT_DAY_ORDER: SplitDay[] = ['upper', 'lower'];
+
+export const SPLIT_DAY_LABEL: Record<SplitDay, string> = {
+  upper: 'Upper body',
+  lower: 'Lower body',
+};
+
+/** Exercises per split day (standard program only). */
+export const SPLIT_WORKOUT: Record<Mode, Record<SplitDay, string[]>> = {
+  home: {
+    upper: ['pullup', 'pike_pushup', 'dip', 'inverted_row', 'pushup', 'hollow'],
+    lower: ['pistol', 'glute_bridge', 'nordic', 'hanging'],
+  },
+  gym: {
+    upper: ['lat_pulldown', 'bench_press', 'cable_row'],
+    lower: ['deadlift', 'hip_thrust', 'romanian_deadlift', 'single_leg_rdl'],
+  },
+};
 
 // ─── Beginner block W1 -> W2 -> W3 (spec section 4) ──────────────────────────
 // Fixed onboarding prescriptions; each item pins an exercise to a starting rung.
@@ -168,12 +187,12 @@ export interface BuildOptions {
   stage: ProgramStage;
   state: ExerciseState;
   kind: 'full' | 'split';
-  splitDirection?: Direction;
+  splitDay?: SplitDay;
 }
 
 /** The current workout, based on where the user is (spec sections 2, 4, 5). */
 export function buildWorkout(opts: BuildOptions): WorkoutItem[] {
-  const { mode, stage, state, kind, splitDirection } = opts;
+  const { mode, stage, state, kind, splitDay } = opts;
 
   // Home beginners follow the fixed W1->W2->W3 block.
   if (mode === 'home' && stage !== 'standard') {
@@ -183,9 +202,8 @@ export function buildWorkout(opts: BuildOptions): WorkoutItem[] {
   const framework = mode === 'home' ? HOME_FRAMEWORK : GYM_FRAMEWORK;
 
   if (kind === 'split') {
-    const dir = splitDirection ?? 'up';
-    const { pull, push } = framework[dir];
-    return [resolve(pull, state), resolve(push, state), resolve(SUPPLEMENTARY.core[0], state)];
+    const day = splitDay ?? 'upper';
+    return SPLIT_WORKOUT[mode][day].map((id) => resolve(id, state));
   }
 
   // Full session: every direction (pull + push) plus one core and one leg movement.
@@ -200,9 +218,20 @@ export function buildWorkout(opts: BuildOptions): WorkoutItem[] {
   return items;
 }
 
-/** Next split direction cycles Up -> Forward -> Down based on the last one. */
-export function nextSplitDirection(last?: Direction): Direction {
-  if (!last) return 'up';
-  const i = DIRECTION_ORDER.indexOf(last);
-  return DIRECTION_ORDER[(i + 1) % DIRECTION_ORDER.length];
+/** Maps legacy session `split` values (up/forward/down) to upper body. */
+export function normalizeSplitDay(last?: string | null): SplitDay | undefined {
+  if (last === 'upper' || last === 'lower') return last;
+  if (last === 'up' || last === 'forward' || last === 'down') return 'upper';
+  return undefined;
+}
+
+/** Next split alternates upper ↔ lower. */
+export function nextSplitDay(last?: SplitDay): SplitDay {
+  if (!last) return 'upper';
+  return last === 'upper' ? 'lower' : 'upper';
+}
+
+/** @deprecated Use nextSplitDay — kept for imports during transition. */
+export function nextSplitDirection(last?: SplitDay): SplitDay {
+  return nextSplitDay(last);
 }

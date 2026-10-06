@@ -543,6 +543,22 @@
   flex-direction: column;
   gap: 8px;
 }
+.daily-checks > .sick-day-btn {
+  margin: 0;
+}
+
+.daily-checks-stack {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 8px;
+  width: 100%;
+}
+.daily-checks-stack > .daily-check,
+.daily-checks-stack > .protein-log--home {
+  margin: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
 .daily-checks-head { display: flex; justify-content: space-between; align-items: center; }
 .daily-checks-title {
   font-family: var(--font-display);
@@ -628,9 +644,16 @@
   min-height: 0;
 }
 .daily-check.readonly { cursor: default; opacity: 0.92; }
-.daily-check-mark { width: 1.25rem; text-align: center; font-weight: 700; }
-.daily-check-label { display: block; }
-.daily-check-sub { display: block; font-size: 12px; margin-top: 2px; }
+.daily-check-mark { flex-shrink: 0; width: 1.25rem; text-align: center; font-weight: 700; }
+.daily-check-label { flex: 1; min-width: 0; }
+.daily-check-sub {
+  flex: 0 1 auto;
+  max-width: 48%;
+  margin-left: auto;
+  font-size: 11px;
+  line-height: 1.3;
+  text-align: right;
+}
 .daily-checks-partner { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
 
 .section-title { font-family: var(--font-display); font-size: 18px; letter-spacing: 0.06em; margin: 0 0 8px; }
@@ -904,14 +927,21 @@
   border-radius: var(--radius);
   background: var(--surface);
 }
-.protein-calc-summary { display: flex; flex-direction: column; gap: 8px; }
+.protein-calc-summary,
+.protein-log-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 .protein-calc-nums {
   display: flex;
   align-items: baseline;
   gap: 6px;
+  margin: 0;
+  line-height: 1.1;
   font-variant-numeric: tabular-nums;
 }
-.protein-calc-logged { font-size: 36px; font-weight: 600; letter-spacing: -0.02em; }
+.protein-calc-logged { font-size: 36px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; }
 .protein-calc-slash { font-size: 20px; }
 .protein-calc-target { font-size: 18px; color: var(--muted); }
 .protein-calc-caption { margin: 0; font-size: 13px; }
@@ -939,7 +969,7 @@
   flex-wrap: nowrap;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: 2px;
+  padding: 0;
 }
 .protein-calc-chip {
   flex: 0 0 auto;
@@ -1008,7 +1038,9 @@
 }
 
 .protein-log--home {
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   padding: 12px 14px;
   margin: 0;
   border: none;
@@ -1023,12 +1055,12 @@
 .protein-log--home.protein-log--done .protein-log-mark.done { color: var(--accent); }
 .protein-log--home .protein-calc-bar-fill { background: var(--accent); }
 .protein-log--home .protein-calc-bar {
-  margin-bottom: 4px;
+  margin: 0;
 }
 .protein-log--home .protein-log-actions {
-  margin-top: 10px;
+  margin: 0;
 }
-.protein-log--home .protein-calc-logged { font-size: 28px; }
+.protein-log--home .protein-calc-logged { font-size: 28px; line-height: 1; }
 .protein-log--home .protein-calc-chip {
   padding: 8px 9px;
   font-size: 12px;
@@ -1048,7 +1080,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 2px;
+  margin: 0;
 }
 .protein-log-head-main {
   display: flex;
@@ -1081,7 +1113,7 @@
 
 .sick-day-btn {
   width: 100%;
-  margin-bottom: 10px;
+  margin: 0;
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.04em;

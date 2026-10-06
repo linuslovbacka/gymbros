@@ -1,13 +1,12 @@
 import { getExercise } from './exercises';
-import type { Direction, Mode } from './types';
+import type { Mode, SplitDay } from './types';
 import {
   BEGINNER_PROGRAM,
   buildWorkout,
-  DIRECTION_ORDER,
-  GYM_FRAMEWORK,
-  HOME_FRAMEWORK,
-  nextSplitDirection,
-  SUPPLEMENTARY,
+  nextSplitDay,
+  SPLIT_DAY_LABEL,
+  SPLIT_DAY_ORDER,
+  SPLIT_WORKOUT,
   type BuildOptions,
   type ExerciseState,
   type ProgramStage,
@@ -19,17 +18,17 @@ export interface TodayPreviewOptions {
   kind: 'full' | 'split';
   stage: ProgramStage;
   state: ExerciseState;
-  lastSplitDirection?: Direction;
+  lastSplitDay?: SplitDay;
 }
 
 export function todayPreview(opts: TodayPreviewOptions): WorkoutItem[] {
-  const splitDirection = opts.kind === 'split' ? nextSplitDirection(opts.lastSplitDirection) : undefined;
+  const splitDay = opts.kind === 'split' ? nextSplitDay(opts.lastSplitDay) : undefined;
   return buildWorkout({
     mode: opts.mode,
     stage: opts.stage,
     state: opts.state,
     kind: opts.kind,
-    splitDirection,
+    splitDay,
   });
 }
 
@@ -40,14 +39,12 @@ export function describeBeginnerWeek(stage: 'w1' | 'w2' | 'w3') {
   }));
 }
 
-export function describeSplitDay(mode: Mode, direction: Direction) {
-  const framework = mode === 'home' ? HOME_FRAMEWORK : GYM_FRAMEWORK;
-  const { pull, push } = framework[direction];
+export function describeSplitDay(mode: Mode, day: SplitDay) {
+  const ids = SPLIT_WORKOUT[mode][day];
   return {
-    direction,
-    pull: getExercise(pull).name,
-    push: getExercise(push).name,
-    core: getExercise(SUPPLEMENTARY.core[0]).name,
+    day,
+    label: SPLIT_DAY_LABEL[day],
+    exercises: ids.map((id) => getExercise(id).name),
   };
 }
 
@@ -55,4 +52,4 @@ export function describeFullSession(opts: BuildOptions): WorkoutItem[] {
   return buildWorkout(opts);
 }
 
-export { DIRECTION_ORDER, nextSplitDirection };
+export { SPLIT_DAY_ORDER, nextSplitDay, SPLIT_DAY_LABEL };

@@ -17,7 +17,6 @@ export function ProteinLogPanel({
   const { habitsToday, addProteinGrams, resetProteinLog } = useApp();
   const target = proteinTargetG(profile);
   const logged = habitsToday?.protein_g ?? 0;
-  const remaining = Math.max(0, target - logged);
   const met = habitsToday?.protein_met ?? false;
   const pct = target > 0 ? Math.min(100, Math.round((logged / target) * 100)) : 0;
 
@@ -77,13 +76,9 @@ export function ProteinLogPanel({
           <span className="protein-calc-slash muted">/</span>
           <span className="protein-calc-target">{target} g</span>
         </div>
-        <p className={variant === 'home' ? 'protein-log-caption muted' : 'protein-calc-caption muted'}>
-          {met
-            ? 'Target hit for today.'
-            : remaining > 0
-              ? `${remaining} g to go`
-              : 'Log grams as you eat.'}
-        </p>
+        {variant !== 'home' && met && (
+          <p className="protein-calc-caption muted">Target hit for today.</p>
+        )}
         <div className="protein-calc-bar" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
           <span className="protein-calc-bar-fill" style={{ width: `${pct}%` }} />
         </div>

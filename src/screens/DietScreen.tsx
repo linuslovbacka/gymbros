@@ -6,6 +6,8 @@ import { ProteinAlternativesSheet } from '@/components/ProteinAlternativesSheet'
 import { useApp } from '@/state/store';
 import {
   CREATINE_GUIDE,
+  DIET_HABITS_WHY_LEAD,
+  DIET_PROGRAM_TIPS,
   DIET_RESTRICTIONS,
   PERFORMANCE_BULK_PROTEIN,
   dietGoals,
@@ -31,7 +33,9 @@ export function DietScreen() {
     protein_g: 0,
     water_met: false,
     steps_met: false,
+    sleep_met: false,
     creatine_met: false,
+    mobility_met: false,
     sick: false,
   };
   const trained = profile.streak_last_date === TODAY();
@@ -49,6 +53,7 @@ export function DietScreen() {
 
       <section className="stack diet-section">
         <h2 className="section-title">Today</h2>
+        <p className="muted diet-lead">{DIET_HABITS_WHY_LEAD}</p>
         <p className="muted diet-lead">
           Habits score <strong>{done}/{total}</strong>
           {today.sick && ' — training excused while sick.'}
@@ -117,6 +122,15 @@ export function DietScreen() {
             ))}
           </ul>
         </div>
+      </section>
+
+      <section className="stack diet-section">
+        <h2 className="section-title">{DIET_PROGRAM_TIPS.title}</h2>
+        <ul className="diet-creatine-list muted">
+          {DIET_PROGRAM_TIPS.items.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
       </section>
 
       <section className="stack diet-section">

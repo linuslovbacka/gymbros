@@ -1,14 +1,16 @@
 import type { HabitsToday } from '@/state/types';
 
-/** Daily habit score — when sick, training is excused; diet + water still count (3 max). */
+/** Daily habit score — when sick, training is excused; lifestyle habits still count (7 max). */
 export function habitScore(habits: HabitsToday, trainedToday: boolean): { done: number; total: number } {
-  const diet =
+  const lifestyle =
+    (habits.sleep_met ? 1 : 0) +
     (habits.no_sugar ? 1 : 0) +
     (habits.protein_met ? 1 : 0) +
     (habits.water_met ? 1 : 0) +
     (habits.steps_met ? 1 : 0) +
-    (habits.creatine_met ? 1 : 0);
-  if (habits.sick) return { done: diet, total: 5 };
+    (habits.creatine_met ? 1 : 0) +
+    (habits.mobility_met ? 1 : 0);
+  if (habits.sick) return { done: lifestyle, total: 7 };
   const training = trainedToday ? 1 : 0;
-  return { done: diet + training, total: 6 };
+  return { done: lifestyle + training, total: 8 };
 }

@@ -376,6 +376,83 @@ const norwegian4x4: Exercise = {
   ],
 };
 
+const mobilityPrep: Exercise = {
+  id: 'mobility_prep',
+  name: 'Mobility prep',
+  track: 'calisthenics',
+  body: 'core',
+  category: 'Mobility',
+  ladder: [
+    r('Cat-cow + arm circles', '1 x 90 s', 90, 90, 0.15, { timed: true, sets: 1 }),
+    r('Longer prep', '1 x 120 s', 120, 120, 0.2, { timed: true, sets: 1 }),
+  ],
+};
+
+const mobilityPike: Exercise = {
+  id: 'mobility_pike',
+  name: 'Pike stretch',
+  track: 'calisthenics',
+  body: 'lower',
+  category: 'Mobility',
+  ladder: [
+    r('Standing forward fold', '1 x 45 s', 45, 45, 0.15, { timed: true, sets: 1 }),
+    r('Seated pike (knees bent OK)', '1 x 60 s', 60, 60, 0.18, { timed: true, sets: 1 }),
+    r('Seated pike (legs straight)', '1 x 75 s', 75, 75, 0.2, { timed: true, sets: 1 }),
+  ],
+};
+
+const mobilityPancake: Exercise = {
+  id: 'mobility_pancake',
+  name: 'Pancake / straddle',
+  track: 'calisthenics',
+  body: 'lower',
+  category: 'Mobility',
+  ladder: [
+    r('Butterfly sit', '1 x 45 s', 45, 45, 0.15, { timed: true, sets: 1 }),
+    r('Wide seated straddle', '1 x 60 s', 60, 60, 0.18, { timed: true, sets: 1 }),
+    r('Pancake fold', '1 x 75 s', 75, 75, 0.2, { timed: true, sets: 1 }),
+  ],
+};
+
+const mobilityFrontSplit: Exercise = {
+  id: 'mobility_front_split',
+  name: 'Front split progression',
+  track: 'calisthenics',
+  body: 'lower',
+  category: 'Mobility',
+  ladder: [
+    r('Half-kneeling hip flexor', '1 x 45 s each', 45, 45, 0.15, { timed: true, sets: 1, perSide: true }),
+    r('Low lunge + blocks', '1 x 60 s each', 60, 60, 0.18, { timed: true, sets: 1, perSide: true }),
+    r('Split hold (as low as clean)', '1 x 75 s each', 75, 75, 0.2, { timed: true, sets: 1, perSide: true }),
+  ],
+};
+
+const mobilitySideSplit: Exercise = {
+  id: 'mobility_side_split',
+  name: 'Side split / straddle lean',
+  track: 'calisthenics',
+  body: 'lower',
+  category: 'Mobility',
+  ladder: [
+    r('Wide stance lean', '1 x 45 s', 45, 45, 0.15, { timed: true, sets: 1 }),
+    r('Supported straddle sit', '1 x 60 s', 60, 60, 0.18, { timed: true, sets: 1 }),
+    r('Side split progression', '1 x 75 s', 75, 75, 0.2, { timed: true, sets: 1 }),
+  ],
+};
+
+const mobilityPigeon: Exercise = {
+  id: 'mobility_pigeon',
+  name: 'Pigeon / figure-4',
+  track: 'calisthenics',
+  body: 'lower',
+  category: 'Mobility',
+  ladder: [
+    r('Seated figure-4', '1 x 45 s each', 45, 45, 0.15, { timed: true, sets: 1, perSide: true }),
+    r('Floor pigeon (shallow)', '1 x 60 s each', 60, 60, 0.18, { timed: true, sets: 1, perSide: true }),
+    r('Floor pigeon (deeper)', '1 x 75 s each', 75, 75, 0.2, { timed: true, sets: 1, perSide: true }),
+  ],
+};
+
 const hipThrust = gymLift('hip_thrust', 'Barbell hip thrust', 'Glutes: Gym', 'lower', 'compound', 40);
 const romanianDeadlift = gymLift('romanian_deadlift', 'Romanian deadlift', 'Glutes: Gym', 'lower', 'compound', 30);
 const cableKickback = gymLift('cable_kickback', 'Cable kickback', 'Glutes: Gym', 'lower', 'isolation', 5);
@@ -392,6 +469,7 @@ export const EXERCISES: Exercise[] = [
   pullUp, pikePushup, invertedRow, pushup, frontLever, dip,
   handstand, lsit, hollow, pistol, nordic, hanging,
   jumpRope, norwegian4x4,
+  mobilityPrep, mobilityPike, mobilityPancake, mobilityFrontSplit, mobilitySideSplit, mobilityPigeon,
   gluteBridge, singleLegRdl, stepUpGlute, quadrupedKickback, sideHipAbduction,
   latPulldown, shoulderPress, cableRow, benchPress, dbHighPull, weightedDipGym, deadlift,
   hipThrust, romanianDeadlift, cableKickback, hipAbductionMachine,

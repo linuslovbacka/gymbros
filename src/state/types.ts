@@ -15,14 +15,24 @@ export interface DailyHabitsRow {
   protein_g: number;
   water_met: boolean;
   steps_met: boolean;
+  sleep_met: boolean;
   creatine_met: boolean;
+  mobility_met: boolean;
   sick: boolean;
   updated_at?: string;
 }
 
 export type HabitsToday = Pick<
   DailyHabitsRow,
-  'no_sugar' | 'protein_met' | 'protein_g' | 'water_met' | 'steps_met' | 'creatine_met' | 'sick'
+  | 'no_sugar'
+  | 'protein_met'
+  | 'protein_g'
+  | 'water_met'
+  | 'steps_met'
+  | 'sleep_met'
+  | 'creatine_met'
+  | 'mobility_met'
+  | 'sick'
 >;
 
 /** Mirrors the `profiles` row. JSONB columns are typed loosely for Phase 1. */
