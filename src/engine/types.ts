@@ -22,8 +22,13 @@ export interface LoggedEntry {
 export type Feel = 'easy' | 'good' | 'dead';
 
 // Self-report options differ per track (spec section 5).
-export type CalisthenicsProgress = 'more_reps' | 'cleaner_form' | 'harder_variation' | 'easier';
-export type GymProgress = 'more_reps' | 'more_weight' | 'easier';
+export type CalisthenicsProgress =
+  | 'more_reps'
+  | 'cleaner_form'
+  | 'harder_variation'
+  | 'easier'
+  | 'no_progress';
+export type GymProgress = 'more_reps' | 'more_weight' | 'easier' | 'no_progress';
 export type ProgressAnswer = CalisthenicsProgress | GymProgress;
 
 export const CALISTHENICS_PROGRESS: { id: CalisthenicsProgress; label: string }[] = [
@@ -31,12 +36,14 @@ export const CALISTHENICS_PROGRESS: { id: CalisthenicsProgress; label: string }[
   { id: 'cleaner_form', label: 'Cleaner form' },
   { id: 'harder_variation', label: 'Moved to harder variation' },
   { id: 'easier', label: 'Felt easier' },
+  { id: 'no_progress', label: "Didn't progress" },
 ];
 
 export const GYM_PROGRESS: { id: GymProgress; label: string }[] = [
   { id: 'more_reps', label: 'More reps' },
   { id: 'more_weight', label: 'More weight' },
   { id: 'easier', label: 'Felt easier' },
+  { id: 'no_progress', label: "Didn't progress" },
 ];
 
 export const FEEL_OPTIONS: { id: Feel; label: string }[] = [

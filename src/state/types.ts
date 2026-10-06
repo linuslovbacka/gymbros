@@ -5,6 +5,19 @@ import type { CosmeticSlot } from '../content/cosmetics';
 /** Equipped cosmetic per RPG slot (slug or absent). */
 export type EquipMap = Partial<Record<CosmeticSlot, string | null>>;
 
+/** One row in `daily_habits` for a calendar day. */
+export interface DailyHabitsRow {
+  user_id: string;
+  date: string;
+  no_sugar: boolean;
+  protein_met: boolean;
+  water_met: boolean;
+  sick: boolean;
+  updated_at?: string;
+}
+
+export type HabitsToday = Pick<DailyHabitsRow, 'no_sugar' | 'protein_met' | 'water_met' | 'sick'>;
+
 /** Mirrors the `profiles` row. JSONB columns are typed loosely for Phase 1. */
 export interface Profile {
   user_id: string;
@@ -30,6 +43,8 @@ export interface Profile {
   program_stage: ProgramStage;
   days_trained: number;
   pr_count: number;
+  protein_target_g?: number;
+  maintenance_mode?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -56,4 +71,6 @@ export const WRITABLE_PROFILE_COLUMNS = [
   'days_trained',
   'pr_count',
   'display_name',
+  'protein_target_g',
+  'maintenance_mode',
 ] as const;

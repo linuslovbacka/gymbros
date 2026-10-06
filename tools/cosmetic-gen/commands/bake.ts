@@ -64,7 +64,7 @@ export async function bakeCmd(positional: string[], flags: Record<string, string
   const vdir = `${prefix}/v${v}`;
 
   log.info('baking loadout onto frame 0 (image-to-image)…');
-  const raw = await generateImage(resolved, { inputImages: [base] });
+  const raw = await generateImage(resolved, { inputImages: [base], aspectRatio: '3:4' });
   const cut = await cutout(raw);
   await upload(`${vdir}/raw/idle_0.png`, raw, 'image/png');
   await recordImage({ promptVersionId: pv.id, variant: 'raw', clip: 'idle', frameIndex: 0, storagePath: `${vdir}/raw/idle_0.png` });
@@ -72,7 +72,7 @@ export async function bakeCmd(positional: string[], flags: Record<string, string
   await recordImage({ promptVersionId: pv.id, variant: 'cutout', clip: 'idle', frameIndex: 0, storagePath: `${vdir}/cut/idle_0.png` });
 
   const { sheetImageId, sheetPath } = await produceSheet({
-    promptVersionId: pv.id, vdir, frame0Raw: raw, frame0Cut: cut, clips, tier, maxFrames,
+    promptVersionId: pv.id, vdir, frame0Raw: raw, frame0Cut: cut, clips, tier, maxFrames, aspectRatio: '3:4',
   });
 
   log.ok(`bake sheet → ${sheetPath}`);

@@ -12,8 +12,13 @@ import { framePrompt } from './prompt.ts';
 import { clipFrames, CLIP_FPS, type ClipName } from '../prompts/clips.ts';
 import { log } from './log.ts';
 
-export async function genAndCut(prompt: string, inputImages?: Buffer[]): Promise<{ raw: Buffer; cut: Buffer }> {
-  const raw = await generateImage(prompt, { inputImages });
+export interface GenCutOpts {
+  inputImages?: Buffer[];
+  aspectRatio?: string;
+}
+
+export async function genAndCut(prompt: string, opts: GenCutOpts = {}): Promise<{ raw: Buffer; cut: Buffer }> {
+  const raw = await generateImage(prompt, { inputImages: opts.inputImages, aspectRatio: opts.aspectRatio });
   const cut = await cutout(raw);
   return { raw, cut };
 }
@@ -39,6 +44,8 @@ export interface ProduceSheetArgs {
   clips: ClipName[];
   tier: number;
   maxFrames?: number;
+  /** Aspect ratio for the image-to-image animation frames (match frame 0). */
+  aspectRatio?: string;
 }
 
 /** Generate every clip's frames (image-to-image off frame 0), archive them, pack a
@@ -56,7 +63,7 @@ export async function produceSheet(a: ProduceSheetArgs): Promise<{ sheetImageId:
         continue;
       }
       log.dim(`  ${clip} frame ${i}: ${motions[i]}`);
-      const { raw, cut } = await genAndCut(framePrompt(motions[i]), [a.frame0Raw]);
+      const { raw, cut } = await genAndCut(framePrompt(motions[i]), { inputImages: [a.frame0Raw], aspectRatio: a.aspectRatio });
       await archiveFrame(a.promptVersionId, a.vdir, clip, i, raw, cut);
       frames.push(cut);
     }

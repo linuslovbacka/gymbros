@@ -1,4 +1,7 @@
+'use client';
+
 import { useState } from 'react';
+import { MVP_MODE } from '@/lib/mvp';
 import { useApp } from '../state/store';
 import { AvatarStage } from '../components/AvatarStage';
 import { FEEL_OPTIONS, CALISTHENICS_PROGRESS, GYM_PROGRESS, type Feel, type ProgressAnswer } from '../engine/types';
@@ -22,14 +25,40 @@ export function DoneScreen({ draft, onClose }: { draft: SessionDraft; onClose: (
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<ResultState>();
 
-  const progressOptions = draft.mode === 'gym' ? GYM_PROGRESS : CALISTHENICS_PROGRESS;
+  const useGymProgress =
+    draft.mode === 'gym' && draft.routine !== 'skills';
+  const progressOptions = useGymProgress ? GYM_PROGRESS : CALISTHENICS_PROGRESS;
 
   async function submit() {
     if (!feel || !progress) return;
     setBusy(true);
     const r = await completeSession({ ...draft, feel, progress });
     setBusy(false);
-    setResult({ iron: r.ironEarned, grit: r.gritEarned, prompts: r.prompts, prs: r.prs, achievements: r.achievements });
+
+    if (MVP_MODE) {
+      onClose();
+      return;
+    }
+
+    const hasFanfare =
+      r.prompts.length > 0 ||
+      r.prs.length > 0 ||
+      r.achievements.length > 0 ||
+      r.ironEarned > 0 ||
+      r.gritEarned > 0;
+
+    if (!hasFanfare) {
+      onClose();
+      return;
+    }
+
+    setResult({
+      iron: r.ironEarned,
+      grit: r.gritEarned,
+      prompts: r.prompts,
+      prs: r.prs,
+      achievements: r.achievements,
+    });
   }
 
   // ── Result view ───────────────────────────────────────────────────────
@@ -43,18 +72,20 @@ export function DoneScreen({ draft, onClose }: { draft: SessionDraft; onClose: (
           <h1 className="done-title">SESSION LOGGED</h1>
         </div>
 
-        <div className="reward">
-          <div className="text-center">
-            <div className="amt iron">+{result.iron}</div>
-            <div className="tiny">IRON</div>
+        {!MVP_MODE && (
+          <div className="reward">
+            <div className="text-center">
+              <div className="amt iron">+{result.iron}</div>
+              <div className="tiny">IRON</div>
+            </div>
+            <div className="text-center">
+              <div className="amt grit">+{result.grit}</div>
+              <div className="tiny">GRIT</div>
+            </div>
           </div>
-          <div className="text-center">
-            <div className="amt grit">+{result.grit}</div>
-            <div className="tiny">GRIT</div>
-          </div>
-        </div>
+        )}
 
-        {result.prs.length > 0 && (
+        {!MVP_MODE && result.prs.length > 0 && (
           <div className="banner-list">
             {result.prs.map((pr) => (
               <div className="pr-banner" key={pr.exerciseId}>
@@ -66,7 +97,7 @@ export function DoneScreen({ draft, onClose }: { draft: SessionDraft; onClose: (
           </div>
         )}
 
-        {result.achievements.length > 0 && (
+        {!MVP_MODE && result.achievements.length > 0 && (
           <div className="banner-list">
             {result.achievements.map((a) => (
               <div className="ach-banner" key={a.id}>
@@ -80,11 +111,13 @@ export function DoneScreen({ draft, onClose }: { draft: SessionDraft; onClose: (
           </div>
         )}
 
-        <LevelUps
-          prompts={result.prompts}
-          onClimb={climbExercise}
-          onDecline={declineExercise}
-        />
+        {!MVP_MODE && (
+          <LevelUps
+            prompts={result.prompts}
+            onClimb={climbExercise}
+            onDecline={declineExercise}
+          />
+        )}
 
         <div className="spacer" />
         <button className="btn btn-primary btn-block" onClick={onClose}>Back to start</button>
@@ -114,7 +147,7 @@ export function DoneScreen({ draft, onClose }: { draft: SessionDraft; onClose: (
           <button
             key={o.id}
             className={`q-opt ${progress === o.id ? 'active' : ''}`}
-            style={{ flexBasis: 'calc(50% - 4px)' }}
+            style={{ flexBasis: o.id === 'no_progress' ? '100%' : 'calc(50% - 4px)' }}
             onClick={() => setProgress(o.id as ProgressAnswer)}
           >
             {o.label}

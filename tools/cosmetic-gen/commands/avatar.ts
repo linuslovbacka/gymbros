@@ -34,14 +34,14 @@ export async function avatarCmd(positional: string[], flags: Record<string, stri
   const vdir = `${prefix}/v${v}`;
 
   log.info('generating frame 0…');
-  const { raw, cut } = await genAndCut(resolved);
+  const { raw, cut } = await genAndCut(resolved, { aspectRatio: '3:4' });
   await upload(`${vdir}/raw/idle_0.png`, raw, 'image/png');
   await recordImage({ promptVersionId: pv.id, variant: 'raw', clip: 'idle', frameIndex: 0, storagePath: `${vdir}/raw/idle_0.png` });
   await upload(`${vdir}/cut/idle_0.png`, cut, 'image/png');
   await recordImage({ promptVersionId: pv.id, variant: 'cutout', clip: 'idle', frameIndex: 0, storagePath: `${vdir}/cut/idle_0.png` });
 
   const { sheetImageId, sheetPath } = await produceSheet({
-    promptVersionId: pv.id, vdir, frame0Raw: raw, frame0Cut: cut, clips, tier, maxFrames,
+    promptVersionId: pv.id, vdir, frame0Raw: raw, frame0Cut: cut, clips, tier, maxFrames, aspectRatio: '3:4',
   });
 
   log.ok(`sheet → ${sheetPath}`);

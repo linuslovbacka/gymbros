@@ -58,18 +58,30 @@ export function SpriteAnimator({ imageUrl, atlas, clip, flip }: {
     );
   }
 
+  // Scale the sheet so the CURRENT cell fills the avatar area (preserving the
+  // native frame aspect, feet-anchored to the bottom) and stays crisp. Percentage
+  // background sizing/positioning handles the upscale without per-frame pixel math.
   const { frameWidth, frameHeight } = atlas;
+  const clips = Object.values(atlas.clips);
+  const cols = Math.max(1, ...clips.map((c) => c.frames));
+  const rows = Math.max(1, ...clips.map((c) => c.row + 1));
+  const posX = cols > 1 ? (frame / (cols - 1)) * 100 : 0;
+  const posY = rows > 1 ? (active.row / (rows - 1)) * 100 : 0;
+
   return (
-    <div
-      style={{
-        width: '100%',
-        height: '100%',
-        backgroundImage: `url(${imageUrl})`,
-        backgroundPosition: `-${frame * frameWidth}px -${active.row * frameHeight}px`,
-        backgroundRepeat: 'no-repeat',
-        imageRendering: 'pixelated',
-        transform: flip ? 'scaleX(-1)' : undefined,
-      }}
-    />
+    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+      <div
+        style={{
+          height: '100%',
+          aspectRatio: `${frameWidth} / ${frameHeight}`,
+          backgroundImage: `url(${imageUrl})`,
+          backgroundSize: `${cols * 100}% ${rows * 100}%`,
+          backgroundPosition: `${posX}% ${posY}%`,
+          backgroundRepeat: 'no-repeat',
+          imageRendering: 'pixelated',
+          transform: flip ? 'scaleX(-1)' : undefined,
+        }}
+      />
+    </div>
   );
 }

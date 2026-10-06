@@ -1,22 +1,52 @@
+'use client';
+
 import { useMemo, useState } from 'react';
 import { useApp } from '../state/store';
+import { ExerciseGuide } from '../components/ExerciseGuide';
 import { getExercise } from '../content/exercises';
-import { buildWorkout, nextSplitDirection, type WorkoutItem } from '../content/workouts';
+import {
+  buildRoutineWorkout,
+  ROUTINE_LABELS,
+  type WorkoutRoutine,
+} from '../content/routines';
+import { nextSplitDirection, type WorkoutItem } from '../content/workouts';
 import type { Direction, Mode } from '../content/types';
 import type { LoggedEntry } from '../engine/types';
+import { canShowGluteRoutine } from '@/lib/personal-routines';
 
 export interface SessionDraft {
+  routine: WorkoutRoutine;
   mode: Mode;
   kind: 'full' | 'split';
   splitDirection?: Direction;
   entries: LoggedEntry[];
 }
 
-type Phase = 'mode' | 'homekind' | 'log';
+type Phase = 'routine' | 'mode' | 'homekind' | 'log';
 
-export function WorkoutScreen({ onFinish, onCancel }: { onFinish: (d: SessionDraft) => void; onCancel: () => void }) {
-  const { profile, lastSplitDirection } = useApp();
-  const [phase, setPhase] = useState<Phase>('mode');
+function parseInitialRoutine(raw: string | null | undefined, showGlutes: boolean): WorkoutRoutine | null {
+  if (raw === 'main' || raw === 'skills') return raw;
+  if (raw === 'glutes' && showGlutes) return 'glutes';
+  return null;
+}
+
+export function WorkoutScreen({
+  onFinish,
+  onCancel,
+  initialRoutineParam,
+}: {
+  onFinish: (d: SessionDraft) => void;
+  onCancel: () => void;
+  /** From `/workout?routine=skills` */
+  initialRoutineParam?: string | null;
+}) {
+  const { user, profile, lastSplitDirection } = useApp();
+  const showGlutes = canShowGluteRoutine(user?.id);
+
+  const preset = parseInitialRoutine(initialRoutineParam, showGlutes);
+
+  const [routine, setRoutine] = useState<WorkoutRoutine>(preset ?? 'main');
+  const [phase, setPhase] = useState<Phase>(preset ? 'mode' : 'routine');
   const [mode, setMode] = useState<Mode>('home');
   const [kind, setKind] = useState<'full' | 'split'>('full');
 
@@ -24,25 +54,72 @@ export function WorkoutScreen({ onFinish, onCancel }: { onFinish: (d: SessionDra
 
   const items = useMemo<WorkoutItem[]>(() => {
     if (!profile || phase !== 'log') return [];
-    return buildWorkout({
+    return buildRoutineWorkout(routine, {
       mode,
       stage: profile.program_stage,
       state: profile.exercise_state,
       kind,
       splitDirection,
     });
-  }, [profile, phase, mode, kind, splitDirection]);
+  }, [profile, phase, routine, mode, kind, splitDirection]);
 
   if (!profile) return null;
 
-  // ── Choice steps ──────────────────────────────────────────────────────
+  if (phase === 'routine') {
+    const options: WorkoutRoutine[] = showGlutes ? ['main', 'skills', 'glutes'] : ['main', 'skills'];
+    return (
+      <div className="screen">
+        <Topbar onBack={onCancel} title="What today?" />
+        <div className="choice">
+          {options.map((id) => {
+            const { title, sub } = ROUTINE_LABELS[id];
+            return (
+              <ChoiceBtn
+                key={id}
+                label={title}
+                sub={sub}
+                onClick={() => {
+                  setRoutine(id);
+                  setPhase('mode');
+                }}
+              />
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   if (phase === 'mode') {
     return (
       <div className="screen">
-        <Topbar onBack={onCancel} title="Where are you?" />
+        <Topbar onBack={() => (preset ? onCancel() : setPhase('routine'))} title="Where are you?" />
         <div className="choice">
-          <ChoiceBtn label="Home" sub="Rings, parallettes, bodyweight" onClick={() => { setMode('home'); setPhase('homekind'); }} />
-          <ChoiceBtn label="Gym" sub="Weights and machines" onClick={() => { setMode('gym'); setKind('full'); setPhase('log'); }} />
+          <ChoiceBtn
+            label="Home"
+            sub="Rings, parallettes, vest, DB/KB"
+            onClick={() => {
+              setMode('home');
+              const beginner = profile.program_stage !== 'standard';
+              if (routine === 'main' && beginner) {
+                setKind('full');
+                setPhase('log');
+              } else if (routine === 'main') {
+                setPhase('homekind');
+              } else {
+                setPhase('log');
+              }
+            }}
+          />
+          <ChoiceBtn
+            label="Gym"
+            sub="Weights and machines"
+            onClick={() => {
+              setMode('gym');
+              setKind('full');
+              setPhase('log');
+            }}
+          />
         </div>
       </div>
     );
@@ -57,36 +134,55 @@ export function WorkoutScreen({ onFinish, onCancel }: { onFinish: (d: SessionDra
           <ChoiceBtn
             label="Full workout"
             sub={isBeginner ? `Beginner program · ${profile.program_stage.toUpperCase()}` : 'Every direction, ~20 min'}
-            onClick={() => { setKind('full'); setPhase('log'); }}
+            onClick={() => {
+              setKind('full');
+              setPhase('log');
+            }}
           />
-          <ChoiceBtn
-            label="Split"
-            sub={isBeginner ? 'Available after the beginner block' : `Next up: ${splitDirection.toUpperCase()}`}
-            disabled={isBeginner}
-            onClick={() => { setKind('split'); setPhase('log'); }}
-          />
+          {!isBeginner && (
+            <ChoiceBtn
+              label="Split"
+              sub={`Next up: ${splitDirection.toUpperCase()}`}
+              onClick={() => {
+                setKind('split');
+                setPhase('log');
+              }}
+            />
+          )}
         </div>
       </div>
     );
   }
 
+  const logBack = () => {
+    if (routine === 'main' && mode === 'home') setPhase('homekind');
+    else setPhase('mode');
+  };
+
   return (
     <LogPhase
       items={items}
+      routine={routine}
       mode={mode}
       kind={kind}
       splitDirection={splitDirection}
-      onBack={() => setPhase(mode === 'gym' ? 'mode' : 'homekind')}
+      onBack={logBack}
       onFinish={onFinish}
     />
   );
 }
 
-// ─── Logging phase: one exercise at a time ──────────────────────────────
 function LogPhase({
-  items, mode, kind, splitDirection, onBack, onFinish,
+  items,
+  routine,
+  mode,
+  kind,
+  splitDirection,
+  onBack,
+  onFinish,
 }: {
   items: WorkoutItem[];
+  routine: WorkoutRoutine;
   mode: Mode;
   kind: 'full' | 'split';
   splitDirection: Direction;
@@ -94,7 +190,6 @@ function LogPhase({
   onFinish: (d: SessionDraft) => void;
 }) {
   const [idx, setIdx] = useState(0);
-  // values[itemIndex][setIndex] = reps/seconds ; weights for gym lifts
   const [values, setValues] = useState<number[][]>(() => items.map((it) => Array(it.sets).fill(it.low)));
   const [weights, setWeights] = useState<number[][]>(() =>
     items.map((it) => Array(it.sets).fill(it.weightKg ?? 0)),
@@ -127,14 +222,21 @@ function LogPhase({
         sets: values[i].map((v, j) => ({ value: v, weightKg: e.track === 'gym' ? weights[i][j] : undefined })),
       };
     });
-    onFinish({ mode, kind, splitDirection: kind === 'split' ? splitDirection : undefined, entries });
+    onFinish({
+      routine,
+      mode,
+      kind,
+      splitDirection: kind === 'split' ? splitDirection : undefined,
+      entries,
+    });
   }
 
   const unit = item.timed ? 'sec' : 'reps';
+  const sessionTitle = ROUTINE_LABELS[routine].title;
 
   return (
     <div className="screen">
-      <Topbar onBack={idx === 0 ? onBack : () => setIdx(idx - 1)} title={`${idx + 1} / ${items.length}`} />
+      <Topbar onBack={idx === 0 ? onBack : () => setIdx(idx - 1)} title={`${sessionTitle} · ${idx + 1}/${items.length}`} />
 
       <div className="progress-dots">
         {items.map((_, i) => (
@@ -143,9 +245,7 @@ function LogPhase({
       </div>
 
       <div className="exercise-card">
-        <div className="exercise-video">
-          {ex.videoUrl ? 'video' : 'demo video — coming soon'}
-        </div>
+        <ExerciseGuide exerciseId={item.exerciseId} rungName={item.rungName} />
         <h2 className="exercise-name">{item.name}</h2>
         <div className="exercise-rung">{item.rungName}</div>
         <div className="exercise-prescription">
@@ -158,7 +258,7 @@ function LogPhase({
               <span className="set-no">Set {s + 1}</span>
               {ex.track === 'gym' && (
                 <div className="set-input">
-                  <button className="stepper" onClick={() => setWeight(s, (weights[idx][s] ?? 0) - 2.5)}>-</button>
+                  <button type="button" className="stepper" onClick={() => setWeight(s, (weights[idx][s] ?? 0) - 2.5)}>-</button>
                   <input
                     type="number"
                     inputMode="decimal"
@@ -166,11 +266,11 @@ function LogPhase({
                     onChange={(e) => setWeight(s, Number(e.target.value))}
                   />
                   <span className="unit">kg</span>
-                  <button className="stepper" onClick={() => setWeight(s, (weights[idx][s] ?? 0) + 2.5)}>+</button>
+                  <button type="button" className="stepper" onClick={() => setWeight(s, (weights[idx][s] ?? 0) + 2.5)}>+</button>
                 </div>
               )}
               <div className="set-input">
-                <button className="stepper" onClick={() => setVal(s, values[idx][s] - 1)}>-</button>
+                <button type="button" className="stepper" onClick={() => setVal(s, values[idx][s] - 1)}>-</button>
                 <input
                   type="number"
                   inputMode="numeric"
@@ -178,25 +278,24 @@ function LogPhase({
                   onChange={(e) => setVal(s, Number(e.target.value))}
                 />
                 <span className="unit">{unit}</span>
-                <button className="stepper" onClick={() => setVal(s, values[idx][s] + 1)}>+</button>
+                <button type="button" className="stepper" onClick={() => setVal(s, values[idx][s] + 1)}>+</button>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      <button className="btn btn-primary btn-block" onClick={isLast ? finish : () => setIdx(idx + 1)}>
+      <button type="button" className="btn btn-primary btn-block" onClick={isLast ? finish : () => setIdx(idx + 1)}>
         {isLast ? 'Finish workout' : 'Next exercise'}
       </button>
     </div>
   );
 }
 
-// ─── Small shared bits ──────────────────────────────────────────────────
 function Topbar({ onBack, title }: { onBack: () => void; title: string }) {
   return (
     <div className="topbar">
-      <button className="back" onClick={onBack}>← Back</button>
+      <button type="button" className="back" onClick={onBack}>← Back</button>
       <span className="tiny">{title}</span>
       <span style={{ width: 48 }} />
     </div>
@@ -205,7 +304,7 @@ function Topbar({ onBack, title }: { onBack: () => void; title: string }) {
 
 function ChoiceBtn({ label, sub, onClick, disabled }: { label: string; sub: string; onClick: () => void; disabled?: boolean }) {
   return (
-    <button className="choice-btn" onClick={onClick} disabled={disabled}>
+    <button type="button" className="choice-btn" onClick={onClick} disabled={disabled}>
       <span>{label}<br /><span className="sub">{sub}</span></span>
       <span style={{ color: 'var(--muted-2)' }}>›</span>
     </button>

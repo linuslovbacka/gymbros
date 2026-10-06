@@ -284,10 +284,93 @@ const dbHighPull = gymLift('db_high_pull', 'DB high pull', 'Gym: Down Pull', 'up
 const weightedDipGym = gymLift('weighted_dip', 'Weighted dip', 'Gym: Down Push', 'upper', 'compound', 0);
 const deadlift = gymLift('deadlift', 'Deadlift', 'Gym: Legs', 'lower', 'compound', 40);
 
+// ─── Glute / accessory (home + gym templates) ───────────────────────────────
+
+const gluteBridge: Exercise = {
+  id: 'glute_bridge',
+  name: 'Glute bridge / hip thrust (floor)',
+  track: 'calisthenics',
+  body: 'lower',
+  category: 'Glutes: Home',
+  ladder: [
+    r('Bodyweight bridge', '4 x 12-15', 12, 15, 1.0),
+    r('Single-leg bridge', '4 x 8-12 each', 8, 12, 1.4, { perSide: true }),
+    r('Feet-elevated bridge', '4 x 10-15', 10, 15, 1.6),
+    r('Weighted (vest / backpack)', '4 x 8-12', 8, 12, 2.0),
+    r('Shoulders on bench — hip thrust', '4 x 8-12', 8, 12, 2.5),
+  ],
+};
+
+const singleLegRdl: Exercise = {
+  id: 'single_leg_rdl',
+  name: 'Single-leg RDL',
+  track: 'calisthenics',
+  body: 'lower',
+  category: 'Glutes: Home',
+  ladder: [
+    r('Bodyweight — reach to shin', '3 x 8-10 each', 8, 10, 1.2, { perSide: true }),
+    r('DB / KB / backpack', '3 x 6-10 each', 6, 10, 1.8, { perSide: true }),
+    r('Heavy DB / KB', '3 x 6-8 each', 6, 8, 2.2, { perSide: true }),
+  ],
+};
+
+const stepUpGlute: Exercise = {
+  id: 'step_up_glute',
+  name: 'Glute-bias step-up',
+  track: 'calisthenics',
+  body: 'lower',
+  category: 'Glutes',
+  ladder: [
+    r('Low box — bodyweight', '3 x 8-10 each', 8, 10, 1.2, { perSide: true }),
+    r('High box — slow eccentric', '3 x 6-10 each', 6, 10, 1.6, { perSide: true }),
+    r('Weighted vest / DB goblet', '3 x 6-8 each', 6, 8, 2.0, { perSide: true }),
+  ],
+};
+
+const quadrupedKickback: Exercise = {
+  id: 'quadruped_kickback',
+  name: 'Quadruped / band kickback',
+  track: 'calisthenics',
+  body: 'lower',
+  category: 'Glutes: Home',
+  ladder: [
+    r('Quadruped kickback', '3 x 12-15 each', 12, 15, 0.9, { perSide: true }),
+    r('Band kickback (anchored low)', '3 x 12-15 each', 12, 15, 1.2, { perSide: true }),
+    r('Ankle weights / light band', '3 x 15 each', 15, 15, 1.4, { perSide: true }),
+  ],
+};
+
+const sideHipAbduction: Exercise = {
+  id: 'side_hip_abduction',
+  name: 'Side-lying abduction / clamshell',
+  track: 'calisthenics',
+  body: 'lower',
+  category: 'Glutes: Home',
+  ladder: [
+    r('Side-lying leg raise', '3 x 12-20 each', 12, 20, 0.8, { perSide: true }),
+    r('Clamshell', '3 x 15-20 each', 15, 20, 1.0, { perSide: true }),
+    r('Banded lateral walk + clamshell', '3 x 12-15 each', 12, 15, 1.3, { perSide: true }),
+  ],
+};
+
+const hipThrust = gymLift('hip_thrust', 'Barbell hip thrust', 'Glutes: Gym', 'lower', 'compound', 40);
+const romanianDeadlift = gymLift('romanian_deadlift', 'Romanian deadlift', 'Glutes: Gym', 'lower', 'compound', 30);
+const cableKickback = gymLift('cable_kickback', 'Cable kickback', 'Glutes: Gym', 'lower', 'isolation', 5);
+const hipAbductionMachine = gymLift(
+  'hip_abduction_machine',
+  'Hip abduction machine',
+  'Glutes: Gym',
+  'lower',
+  'isolation',
+  20,
+);
+
 export const EXERCISES: Exercise[] = [
   pullUp, pikePushup, invertedRow, pushup, frontLever, dip,
   handstand, lsit, hollow, pistol, nordic, hanging,
+  gluteBridge, singleLegRdl, stepUpGlute, quadrupedKickback, sideHipAbduction,
   latPulldown, shoulderPress, cableRow, benchPress, dbHighPull, weightedDipGym, deadlift,
+  hipThrust, romanianDeadlift, cableKickback, hipAbductionMachine,
 ];
 
 export const EXERCISE_BY_ID: Record<string, Exercise> = Object.fromEntries(

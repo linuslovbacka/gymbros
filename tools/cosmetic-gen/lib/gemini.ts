@@ -17,6 +17,8 @@ function ai(): GoogleGenAI {
 export interface GenImageOpts {
   /** Optional conditioning images (image-to-image). Frame 0 / current avatar etc. */
   inputImages?: Buffer[];
+  /** Output aspect ratio, e.g. '3:4' (portrait avatar), '1:1' (item icon). */
+  aspectRatio?: string;
 }
 
 /** Generate a single PNG image. Returns the raw bytes (still has the gen background). */
@@ -29,7 +31,10 @@ export async function generateImage(prompt: string, opts: GenImageOpts = {}): Pr
   const res = await ai().models.generateContent({
     model: CONFIG.geminiModel(),
     contents: [{ role: 'user', parts }],
-    config: { responseModalities: [Modality.IMAGE] },
+    config: {
+      responseModalities: [Modality.IMAGE],
+      ...(opts.aspectRatio ? { imageConfig: { aspectRatio: opts.aspectRatio } } : {}),
+    },
   });
 
   const candidate = res.candidates?.[0];

@@ -13,13 +13,14 @@ export const FRAME_H = 72;
 export const GEN_BACKGROUND = '#FF00FF';
 
 export const BASE_STYLE = `
-Low-res AAA-shooter sprite style — reference territory Halo / Gears of War / Dead Space.
+Low-res AAA-shooter pixel-art style — reference territory Halo / Gears of War / Dead Space.
 Gritty, cinematic, desaturated, grounded. NO cartoon, NO chibi, NO anime exaggeration.
 
-FORMAT (locked): a single full-body character sprite designed to read at a native
-${FRAME_W}x${FRAME_H} pixel frame, displayed upscaled 3-4x. Full body visible, loose weighted
-stance, slight 3/4 turn. NO anti-aliasing on the silhouette: flat colour blocks, hard chunky
-pixel edges, visible individual pixels. NOT smooth, NOT painterly, NOT high-detail illustration.
+FORMAT (locked): ONE single full-body character, centered, in a single static pose, designed to
+read at a native ${FRAME_W}x${FRAME_H} pixel frame displayed upscaled 3-4x. Full body visible head to
+feet, loose weighted stance, slight 3/4 turn. NO anti-aliasing on the silhouette: flat colour
+blocks, hard chunky pixel edges, visible individual pixels. NOT smooth, NOT painterly, NOT
+high-detail illustration.
 
 PROPORTIONS: head-to-body ratio 1:7, realistic-heroic. NOT chibi, NOT stumpy, NOT stocky.
 
@@ -38,6 +39,13 @@ occasional warm amber. NO neon. Do NOT draw a colour legend or swatches in the i
 BACKGROUND: solid flat ${GEN_BACKGROUND} background, nothing else — no ground shadow, no props,
 no text. The character is isolated and centered for clean background removal.
 `.trim();
+
+/** Critical anti-turnaround clause. Image models love to emit a multi-pose
+ *  turnaround / contact sheet for "sprite" prompts — forbid it explicitly. */
+export const SINGLE_FIGURE =
+  'CRITICAL: render EXACTLY ONE figure. NO turnaround, NO multiple angles, NO side-by-side poses, ' +
+  'NO duplicated characters, NO sprite sheet, NO contact sheet, NO grid, NO reference sheet. ' +
+  'A single centered subject only, filling the frame head to feet.';
 
 /** Appended to single-item (non-avatar) generations. */
 export const ITEM_FRAMING = 'Single item only, isolated and centered on the flat background, no character, no mannequin.';

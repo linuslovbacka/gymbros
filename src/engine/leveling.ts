@@ -70,7 +70,8 @@ export function applyProgress(
   for (const entry of entries) {
     const prev = state[entry.exerciseId] ?? {};
     const hit = entryHitCeiling(entry);
-    const streak = hit ? (prev.ceilingStreak ?? 0) + 1 : 0;
+    const streak =
+      progress === 'no_progress' ? 0 : hit ? (prev.ceilingStreak ?? 0) + 1 : 0;
     const maxed = atMax(entry.exerciseId, entry.rungIndex);
 
     const eligible =

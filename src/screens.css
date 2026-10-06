@@ -11,13 +11,12 @@
 }
 .promode-label {
   font-family: var(--font-display);
-  font-weight: 700;
-  font-size: clamp(30px, 11vw, 52px);
-  letter-spacing: 0.06em;
+  font-weight: 400;
+  font-size: clamp(28px, 10vw, 44px);
+  letter-spacing: 0.04em;
   line-height: 0.95;
   text-align: center;
   color: var(--text);
-  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.5);
 }
 .promode-lvl {
   font-size: 11px;
@@ -35,6 +34,121 @@
   0%, 100% { filter: hue-rotate(0deg) brightness(1); transform: scale(1); }
   50% { filter: hue-rotate(-12deg) brightness(1.2); transform: scale(1.02); }
 }
+
+/* ─── MVP home (no VS / avatars) ───────────────────────────────────────── */
+.start-mvp {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+.start-mvp .daily-checks {
+  flex: 1;
+}
+
+/* ─── VS / start screen: Figma "LL PLAY" theme ─────────────────────────── */
+.vs-screen { position: relative; overflow: hidden; }
+/* Layer everything above the gym background */
+.vs-screen > *:not(.vs-bg) { position: relative; z-index: 1; }
+
+.vs-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: transparent;
+  pointer-events: none;
+}
+
+/* GYMBROS metallic logo replaces the level-0 Pro Mode label */
+.promode-logo {
+  display: block;
+  width: min(86%, 360px);
+  height: auto;
+  margin: 0 auto;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.55));
+}
+
+/* VS medallion in the centre column of the grid */
+.vs-badge {
+  align-self: center;
+  width: clamp(48px, 14vw, 72px);
+  height: auto;
+  opacity: 0.35;
+  filter: grayscale(1);
+  pointer-events: none;
+}
+
+/* Foot shadow grounding each fighter */
+.fighter-figure { position: relative; }
+.foot-shadow {
+  position: absolute;
+  bottom: 2%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 62%;
+  height: auto;
+  z-index: 0;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Engraved metallic name + level plates */
+.vs-screen .fighter-name {
+  font-family: var(--font-display);
+  font-size: 20px;
+  letter-spacing: 0.06em;
+  color: var(--text);
+}
+.fighter-level {
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* ENTER THE GYM metal plate as the primary CTA */
+.btn-train-plate {
+  display: none;
+}
+.btn-train-nothing {
+  margin-top: 8px;
+  padding: 22px;
+  font-size: 24px;
+  letter-spacing: 0.12em;
+}
+.btn-train-plate-legacy {
+  display: block;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 0;
+  margin-top: 4px;
+  transition: transform 0.08s ease, filter 0.15s ease;
+  filter: drop-shadow(0 8px 22px rgba(0, 0, 0, 0.5));
+}
+.btn-train-plate img {
+  display: block;
+  width: min(100%, 380px);
+  height: auto;
+  margin: 0 auto;
+  image-rendering: pixelated;
+}
+.btn-train-plate:active { transform: translateY(1px) scale(0.99); }
+.btn-train-plate:hover { filter: drop-shadow(0 8px 26px rgba(232, 160, 75, 0.4)); }
+
+/* Tap the avatar to open the locker (replaces the LOCKER button) */
+.fighter-figure.is-tappable {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.1s ease, filter 0.15s ease;
+}
+.fighter-figure.is-tappable:hover { filter: drop-shadow(0 0 14px rgba(232, 160, 75, 0.35)); }
+.fighter-figure.is-tappable:active { transform: scale(0.97); }
 
 /* ─── VS / start screen ────────────────────────────────────────────────── */
 .vs {
@@ -74,11 +188,11 @@
 .rest-tokens .token.off { background: transparent; opacity: 0.5; }
 .vs-mark {
   font-family: var(--font-display);
-  font-size: 44px;
-  font-weight: 700;
-  color: var(--amber);
+  font-size: 28px;
+  font-weight: 400;
+  color: var(--muted-2);
   align-self: center;
-  text-shadow: 0 0 18px rgba(232, 160, 75, 0.4);
+  letter-spacing: 0.08em;
 }
 .days-trained {
   position: absolute;
@@ -87,9 +201,9 @@
 }
 .days-trained .num {
   font-family: var(--font-display);
-  font-size: clamp(80px, 30vw, 150px);
-  color: #ffffff;
-  opacity: 0.05;
+  font-size: clamp(72px, 28vw, 132px);
+  color: var(--text);
+  opacity: 0.06;
   line-height: 1;
 }
 .days-trained .lbl { font-size: 11px; letter-spacing: 0.3em; color: var(--muted-2); margin-top: -6px; }
@@ -97,8 +211,7 @@
 .empty-side { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 8px; opacity: 0.5; }
 
 /* ─── Header bar (top of inner screens) ───────────────────────────────── */
-.topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-.back { background: none; border: none; color: var(--muted); font-size: 15px; padding: 6px; }
+.topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 8px; }
 
 /* ─── Exercise card / workout ─────────────────────────────────────────── */
 .progress-dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 16px; }
@@ -107,17 +220,76 @@
 .progress-dots .d.current { background: var(--text); transform: scale(1.3); }
 
 .exercise-card { flex: 1; display: flex; flex-direction: column; }
+.exercise-guide { margin-bottom: 14px; }
 .exercise-video {
   aspect-ratio: 16 / 9;
-  background: repeating-linear-gradient(45deg, #14171c, #14171c 10px, #171b21 10px, #171b21 20px);
-  border: 1px solid var(--line);
+  background: var(--bg-3);
+  border: none;
+  box-shadow: inset 0 0 0 1px var(--line);
   border-radius: var(--radius);
+  overflow: hidden;
   display: flex; align-items: center; justify-content: center;
-  color: var(--muted-2); font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase;
-  margin-bottom: 14px;
+  color: var(--muted-2); font-size: 13px;
 }
-.exercise-name { font-size: 26px; }
-.exercise-rung { color: var(--amber); font-weight: 600; margin-top: 2px; }
+.exercise-video iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.exercise-video-poster {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  background: #000;
+}
+.exercise-video-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.85;
+}
+.exercise-video-poster.is-fallback img {
+  object-fit: cover;
+  opacity: 1;
+}
+.exercise-video-poster.is-fallback .exercise-video-play {
+  background: linear-gradient(to top, rgba(236, 236, 236, 0.92) 0%, transparent 55%);
+  align-items: flex-end;
+  padding-bottom: 14px;
+  font-size: 12px;
+  color: var(--text);
+}
+.exercise-video-play {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+  color: var(--text);
+  background: rgba(13, 15, 18, 0.45);
+  pointer-events: none;
+}
+.exercise-video-link {
+  color: var(--amber);
+  font-weight: 600;
+  text-decoration: none;
+}
+.exercise-media-credit { margin-top: 6px; }
+.exercise-tips {
+  margin: 10px 0 0;
+  padding-left: 1.1rem;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.exercise-tips li { margin-bottom: 4px; }
+.exercise-name { font-size: 28px; letter-spacing: 0.02em; }
+.exercise-rung { color: var(--accent); font-weight: 600; margin-top: 2px; font-size: 14px; }
 .exercise-prescription { color: var(--muted); margin-top: 6px; font-size: 14px; }
 
 .set-list { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
@@ -140,8 +312,14 @@
 
 /* ─── Auth / pair ─────────────────────────────────────────────────────── */
 .gate { min-height: 100dvh; display: flex; flex-direction: column; justify-content: center; gap: 18px; padding: 24px; }
-.gate .logo { font-family: var(--font-display); font-size: 56px; text-align: center; letter-spacing: 0.06em; }
-.gate .tagline { text-align: center; color: var(--muted); margin-top: -10px; }
+.gate .logo {
+  font-family: var(--font-display);
+  font-size: 48px;
+  text-align: center;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+.gate .tagline { text-align: center; color: var(--muted); margin-top: 4px; font-size: 14px; }
 .field { width: 100%; padding: 14px; background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius-sm); color: var(--text); font-size: 16px; }
 .divider { display: flex; align-items: center; gap: 10px; color: var(--muted-2); font-size: 12px; }
 .divider::before, .divider::after { content: ''; height: 1px; background: var(--line); flex: 1; }
@@ -157,8 +335,21 @@
 .done-title { font-size: 34px; text-align: center; }
 .q-label { font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin: 18px 0 8px; }
 .q-options { display: flex; gap: 8px; }
-.q-opt { flex: 1; padding: 14px 8px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--bg-2); color: var(--text); font-weight: 600; font-size: 14px; }
-.q-opt.active { border-color: var(--amber); background: rgba(232,160,75,0.12); }
+.q-opt {
+  flex: 1;
+  padding: 14px 8px;
+  border-radius: var(--radius-pill);
+  border: none;
+  background: var(--bg-2);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 13px;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.q-opt.active {
+  box-shadow: inset 0 0 0 2px var(--text);
+  background: var(--bg-2);
+}
 
 .reward { display: flex; gap: 14px; justify-content: center; margin: 18px 0; }
 .reward .amt { font-family: var(--font-display); font-size: 30px; }
@@ -262,13 +453,31 @@
   box-shadow: 0 0 8px rgba(111,174,122,0.8);
 }
 .both-today {
-  text-align: center; font-family: var(--font-display); font-size: 13px;
-  letter-spacing: 0.12em; color: #6fae7a; margin: 6px 0 -6px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  margin: 6px 0 -6px;
 }
 
 /* ── Fire vortex (Phase 5, spec section 10) ───────────────────────────────── */
 .avatar-stage { position: relative; width: 100%; height: 100%; }
 .avatar-layer { position: absolute; inset: 0; z-index: 1; display: flex; align-items: flex-end; justify-content: center; }
+
+/* Idle "breathing" — keeps the avatar alive even when the spritesheet is a
+   single still frame (feet stay planted via bottom transform-origin). */
+.avatar-body {
+  transform-origin: 50% 100%;
+  animation: avatar-breathe 3.4s ease-in-out infinite;
+  will-change: transform;
+}
+.avatar-body.is-flexing { animation-duration: 1.4s; }
+@keyframes avatar-breathe {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  50%      { transform: translateY(-1.4%) scaleY(1.014); }
+}
+@media (prefers-reduced-motion: reduce) { .avatar-body { animation: none; } }
 
 .vortex { position: absolute; left: 50%; transform: translateX(-50%); pointer-events: none; border-radius: 50%; filter: blur(3px); }
 .vortex-base {
@@ -301,3 +510,350 @@
   50%      { transform: translateX(-50%) scaleY(1.08); filter: blur(3px) brightness(1.28); }
 }
 @media (prefers-reduced-motion: reduce) { .vortex { animation: none; } }
+
+/* ── Habits MVP ───────────────────────────────────────────────────────────── */
+.daily-checks {
+  margin: 0 0 12px;
+  padding: 16px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--bg-2);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.daily-checks-head { display: flex; justify-content: space-between; align-items: center; }
+.daily-checks-title {
+  font-family: var(--font-display);
+  letter-spacing: 0.12em;
+  font-size: 13px;
+  text-transform: uppercase;
+}
+.daily-checks-score {
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--accent);
+}
+.daily-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--bg-3);
+  color: var(--text);
+  font-size: 14px;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.daily-check.done {
+  box-shadow: inset 0 0 0 2px var(--accent);
+  background: rgba(255, 77, 36, 0.1);
+}
+.daily-check.done .daily-check-mark {
+  color: var(--accent);
+}
+
+/* Nothing OS segmented control (Day / Week style track) */
+.nothing-segment {
+  position: relative;
+  display: flex;
+  background: #2a2a2a;
+  border-radius: var(--radius-pill);
+  padding: 4px;
+  margin-bottom: 12px;
+}
+.nothing-segment-indicator {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: 40px;
+  border-radius: var(--radius-pill);
+  background: #ffffff;
+  z-index: 0;
+  pointer-events: none;
+  transition: none;
+}
+.nothing-segment button {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 10px 8px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+.nothing-segment button.active {
+  color: var(--text);
+}
+.nothing-segment button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.screen-enter {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.daily-check.readonly { cursor: default; opacity: 0.92; }
+.daily-check-mark { width: 1.25rem; text-align: center; font-weight: 700; }
+.daily-check-label { display: block; }
+.daily-check-sub { display: block; font-size: 12px; margin-top: 2px; }
+.daily-checks-partner { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+
+.section-title { font-family: var(--font-display); font-size: 18px; letter-spacing: 0.06em; margin: 0 0 8px; }
+.schedule-list { margin: 0; padding-left: 1.1rem; font-size: 14px; line-height: 1.45; }
+.schedule-block { margin-bottom: 16px; }
+
+/* ─── Diet reference screen ─────────────────────────────────────────────── */
+.diet-section { gap: 10px; }
+.diet-lead { font-size: 13px; margin: 0; line-height: 1.45; }
+.diet-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.diet-card {
+  background: var(--bg-2);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 14px 16px;
+}
+.diet-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.diet-card-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 0.04em;
+}
+.diet-card-detail {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.diet-target {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.diet-today-pill {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-3);
+  color: var(--muted);
+}
+.diet-today-pill.done {
+  background: rgba(255, 77, 36, 0.12);
+  color: var(--accent);
+}
+.diet-foot {
+  margin-top: 8px;
+  line-height: 1.45;
+  text-align: center;
+}
+.diet-mode-btn { text-align: center; font-size: 13px; }
+
+.sick-day-btn {
+  width: 100%;
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  background: var(--bg-2);
+  color: var(--muted);
+  box-shadow: var(--shadow-pill);
+}
+.sick-day-btn-on {
+  background: rgba(255, 77, 36, 0.12);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.sick-train-note {
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.45;
+  padding: 0 8px 12px;
+}
+.sick-bro-note { margin-bottom: 6px; color: var(--accent); }
+
+.week-strip {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+.week-strip-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-2);
+  box-shadow: var(--shadow-card);
+  font-size: 10px;
+}
+.week-strip-day.is-today {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.week-strip-day.is-sick {
+  background: rgba(255, 77, 36, 0.08);
+}
+.week-strip-short {
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+}
+.week-strip-label {
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.2;
+}
+.week-strip-score {
+  display: block;
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+.week-strip-score-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--text);
+  min-width: 0;
+  transition: width 0.25s ease;
+}
+.week-strip-day.is-sick .week-strip-score-fill {
+  background: var(--accent);
+}
+.week-strip-pct {
+  font-size: 9px;
+  letter-spacing: 0.04em;
+}
+
+.habit-timeline-wrap {
+  margin-top: 4px;
+}
+.habit-timeline-wrap.is-compact .habit-timeline-scroll {
+  height: 36px;
+}
+.habit-timeline-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.habit-timeline-title {
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.habit-timeline-meta {
+  font-size: 11px;
+}
+.habit-timeline-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+}
+.habit-timeline {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  min-width: min(100%, 480px);
+  height: 52px;
+  padding: 4px 2px;
+  background: var(--bg-2);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-card);
+}
+.habit-timeline-wrap.is-compact .habit-timeline {
+  height: 40px;
+}
+.habit-timeline-cell {
+  position: relative;
+  flex: 1 1 3px;
+  max-width: 10px;
+  min-width: 3px;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.04);
+}
+.habit-timeline-cell.week-start {
+  margin-left: 3px;
+  box-shadow: -2px 0 0 0 var(--line);
+}
+.habit-timeline-cell.is-today {
+  box-shadow: inset 0 0 0 1.5px var(--text);
+}
+.habit-timeline-cell.is-sick::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 3px;
+  bottom: 3px;
+  width: 2px;
+  transform: translateX(-50%);
+  border-radius: 1px;
+  background: var(--accent);
+  pointer-events: none;
+  z-index: 1;
+}
+.habit-timeline-fill {
+  position: relative;
+  z-index: 0;
+  width: 100%;
+  border-radius: 2px 2px 1px 1px;
+  background: var(--text);
+  min-height: 0;
+  transition: height 0.2s ease;
+}
+.habit-timeline-cell.is-empty {
+  opacity: 0.55;
+}
+.habit-timeline-legend {
+  font-size: 11px;
+  line-height: 1.4;
+  margin: 8px 0 0;
+}
+
+.schedule-sick-note {
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 0;
+}
+.schedule-block h3 { font-size: 15px; margin: 0 0 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.topbar-title { font-family: var(--font-display); letter-spacing: 0.08em; flex: 1; text-align: center; }

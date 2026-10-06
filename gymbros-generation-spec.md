@@ -34,9 +34,9 @@ Decisions include the reasoning behind them so future-you can revisit *why* with
 ## 3. v1 scope decisions (and why)
 
 ### Single combined physique tier per side
-The avatar renders as **one combined sprite per side** (~12 base images: 2 sides × ~6 tiers), driven by a single derived tier. Upper/lower body stay split **only in the levelling data** (`gymbros-spec.md` §3/§5).
+The avatar renders as **one combined sprite per side** across **10 locked tiers** (20 base sprite states: 2 sides × 10 tiers), driven by a single derived tier. Upper/lower body stay split **only in the levelling data** (`gymbros-spec.md` §3/§5). The 10-tier arc (physique + idle + taunt per tier) is defined in §5.
 
-- *Why:* independent upper × lower visual tiers is a combinatorial explosion (2 sides × ~6 × ~6 = 72+ base images before any cosmetic or animation frame), and generated art drifts badly when asked to hold one character across that many related states. A single axis keeps it tractable and consistent.
+- *Why:* independent upper × lower visual tiers is a combinatorial explosion (2 sides × 10 × 10 = 200+ base images before any cosmetic or animation frame), and generated art drifts badly when asked to hold one character across that many related states. A single axis keeps it tractable and consistent.
 - *Trade-off accepted:* the "skipped leg day is immediately visible" hook is deferred as a *visual* feature; it still exists in data. A v2 may revisit it via layered upper/lower compositing once consistency is solved.
 
 ### Generated animation via spritesheets
@@ -47,7 +47,7 @@ Each state gets a base pose plus short clips: an idle "breathing" **loop** and a
 - *Why this is flagged risky:* frame-consistent generated spritesheets are the hardest thing to get out of an image model. Treat the multi-frame path as "try it, review, keep if it holds," with the static fallback always available.
 
 ### Per-player avatar
-Each player (Linus / Oskar) has their own base description. **Avatar state = base style + player prompt + tier + side + equipped loadout.**
+Each player (Linus / Oskar) has their own base description. **Avatar state = base style + player prompt + tier + side + equipped loadout.** Players share the same Swedish skin tone, the same physique arc, and the same face shape — they differ only by **hair colour** and **side**: **Linus = dirty-blonde / light-brown hair; Oskar = darker brown.**
 
 ---
 
@@ -112,10 +112,26 @@ Pulled from `gymbros-spec.md` §3 — the generation prompts must encode these.
 The detailed reference prompt splits across the §6 layers so style + identity + choreography stay reusable while only the physique/clothing changes per tier:
 
 - **base-style.ts (constant):** the Reference / Format / Proportions / Shading / Outline / Palette rules above.
-- **players.ts (per-player identity):** young man, late teens / early twenties, **youthful** soft features (not rugged/older); short mid-brown hair `#3A2510`, flat tan skin; simple head shape, same face every frame.
+- **players.ts (per-player identity):** young man, late teens / early twenties, **youthful** soft features (not rugged/older); Swedish skin tone, simple head shape, same face every frame. Differ only by hair: **Linus = dirty-blonde / light-brown (~`#8A6B3A`)**, **Oskar = dark brown (~`#3A2510`)**. Same physique arc for both.
 - **avatars.ts → tier 1 (physique + starter clothing):** scrawny, underdeveloped — narrow shoulders barely wider than hips, thin straight arms with no muscle, flat narrow chest, mild forward slouch (a weak beginner who's never trained). Oversized off-white tee `#D8D0B8` hanging off the thin frame; baggy olive-grey joggers `#5A6258`; scuffed low brown sneakers `#282420`.
-- **frames.ts (choreography):** *idle clip* (loop) = neutral → chest 1px up / shoulders lift → back toward neutral → head dips 1px. *flex/taunt clip* (one-shot) = raise right arm into a flex → **bicep completely flat, no bulge**, looking at it → other hand points at the unimpressive arm → both arms drop, shoulders slump, head lowers (defeated).
-- **Tier-dependent payoff (IMPORTANT):** the flat-bicep/defeated-slump punchline is **tier-1 only**. The flex choreography must be parameterized per tier so higher tiers pay off with a real bulge and pride. The animation itself carries the progression joke.
+- **clips.ts (choreography):** each tier has its **own** idle loop and done-screen taunt (the taunt is NOT always a flex — see the 10-tier arc below). Tier 1 idle = neutral → chest 1px up / shoulders lift → back toward neutral → head dips 1px.
+
+### The 10-tier arc (LOCKED)
+Both **physique** (muscle) and **posture/confidence** progress continuously, and each tier's **done-screen taunt** is a distinct one-shot personality beat that escalates from pathetic-and-grounded to unhinged. This earns the late-game chaos (ties into the fire-vortex flourish §10 and Pro Mode escalation §7 in `gymbros-spec.md`).
+
+1. **The Couch Gamer** — scrawny, narrow shoulders, forward slouch. Idle: slumped, weight on one hip. Taunt: pulls out phone, plays a mobile game, ignores you.
+2. **The Newbie** — same skinny frame, standing a little straighter. Idle: shifts awkwardly. Taunt: attempts a flex → bicep completely flat → pokes it, disappointed.
+3. **The Try-Hard** — faint tone, upright posture. Idle: bouncing on the balls of his feet. Taunt: jump rope — gets tangled, stumbles, recovers.
+4. **The Regular** — visible beginner muscle, shoulders fill the shirt. Idle: relaxed, confident-ish. Taunt: towels off sweat, modest nod, small-but-real flex.
+5. **The Committed** — solid, defined arms, chest fills out. Idle: arms crossed, chin up. Taunt: claps chalk (puff of dust), finger-guns at you.
+6. **The Strong One** — athletic, broad. Idle: subtle confident sway. Taunt: double-biceps with a real peak, smirks.
+7. **The Advanced** — jacked, shirt getting tight. Idle: rolls shoulders, cracks knuckles. Taunt: lat spread — shirt strains.
+8. **The Beast** — huge, veiny, shirt barely holding. Idle: heavy powerful breathing. Taunt: most-muscular crab pose — a shirt seam rips.
+9. **The Monster** — absurd mass, shirt shredded/gone. Idle: menacing, ground seems to vibrate. Taunt: ground-pound flex — dust kicks up, slight screen shake (reuses the §10 final-stage flourish).
+10. **Transcendent (Unhinged)** — mythic, beyond human. Idle: faint levitation, eyes glow. Taunt: flex erupts into an energy burst/aura, briefly lifts off the ground ("THE GYM IS INSIDE YOU NOW").
+
+- **Clothing evolves with the body:** the tier-1 oversized tee / baggy joggers / scuffed sneakers progressively get outgrown — fitted by mid tiers, straining/ripping at tiers 7–9, transcendent at 10.
+- **Idle is a second progression signal:** posture goes slouch → upright → confident → dominant → otherworldly, so even the loop tells the story without a level-up event.
 
 ---
 
@@ -125,7 +141,7 @@ Editable source lives in the repo; the CLI resolves the final prompt and **snaps
 
 - `tools/cosmetic-gen/prompts/base-style.ts` — the shared style block (§5).
 - `tools/cosmetic-gen/prompts/players.ts` — per-player base description (Linus / Oskar).
-- `tools/cosmetic-gen/prompts/avatars.ts` — per-tier physique + clothing fragments (tier 1 = the scrawny beginner in §5; expandable to ~6 tiers).
+- `tools/cosmetic-gen/prompts/avatars.ts` — per-tier physique + clothing fragments for the **10 locked tiers** in §5 (tier 1 = the scrawny Couch Gamer).
 - `tools/cosmetic-gen/prompts/cosmetics.ts` — per-cosmetic fragment + `slot` / category / rarity, seeded from `gymbros-achievements.md` rewards (crown→head, belt→waist, aura→aura, drone→companion, …).
 - `tools/cosmetic-gen/prompts/effects.ts` — the 5 fire-vortex stage prompts.
 - `tools/cosmetic-gen/prompts/clips.ts` (or `frames.ts` data) — per-clip frame choreography (idle loop, flex/taunt one-shot), with **per-tier** variants for the flex payoff.
@@ -244,5 +260,6 @@ Run via `npm run gen` (`tsx tools/cosmetic-gen`).
 - Exact Nanobanan Pro model id and confirmation of image-to-image (reference) support on first run.
 - Whether `@imgly` cutouts are crisp enough for pixel art, or we switch to remove.bg.
 - Whether to add `avatar_base_prompt` directly to `profiles` or keep a small dedicated table.
-- Number of tiers to commit to for v1 (spec says 5–10; pipeline assumes ~6).
 - Frame counts per clip that stay consistent enough to ship.
+
+*Resolved:* 10 tiers (arc locked, §5); players differ only by hair colour + side (Linus dirty-blonde, Oskar dark brown).

@@ -23,8 +23,14 @@ export function ProModeHeader({ level, onPress }: { level: number; onPress: () =
         aria-label="Pro Mode"
         title="Press for more. There is no going back."
       >
-        <span className="promode-label">{label}</span>
-        {level > 0 && <span className="promode-lvl">PRO LV.{level}</span>}
+        {level === 0 ? (
+          <img className="promode-logo" src="/ui/logo-gymbros.png" alt="GYMBROS" />
+        ) : (
+          <>
+            <span className="promode-label">{label}</span>
+            <span className="promode-lvl">PRO LV.{level}</span>
+          </>
+        )}
       </button>
 
       {confirming && (

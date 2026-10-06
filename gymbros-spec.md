@@ -10,7 +10,7 @@ A gamified competitive training app built for two players — Linus and his frie
 
 **Tone:** serious-enough to respect the training, unhinged-enough to be a joke between mates. Grounded gym-bro humour, never cutesy.
 
-**Stack:** React PWA via Vite + Supabase (auth, realtime sync, cloud storage). Same architecture as Pestbok and Gröda — proven and reusable.
+**Stack:** Next.js App Router + Supabase (auth, realtime sync, cloud storage). Same family as Gröda/DLKK on Vercel; Gymbros uses its own Supabase project.
 
 ---
 
@@ -47,7 +47,7 @@ The app is intentionally small. Three screens, one job each.
 The avatar is the core feedback loop of the entire app — strength in the real world is reflected as visible muscle on screen. Upper and lower body are tracked separately *in data*, so skipped leg days still register in progression — but see the v1 rendering note below for how that maps to the sprite.
 
 ### Progression
-- **5–10 visual stages** from scrawny → unhinged
+- **10 visual tiers** from scrawny couch-gamer → transcendent/unhinged (arc locked in `gymbros-generation-spec.md` §5)
 - Upper- and lower-body progression is tracked independently in the levelling data (§5)
 - Movement via spritesheet — idle animation (breathing), plus a flex/taunt for the done screen
 - Placeholder art at first; real sprites swapped in once the references and prompts are dialled in
@@ -483,9 +483,9 @@ A continuous visual feedback layer showing how close the avatar is to the next l
 
 ## 12. Tech stack
 
-- **Frontend:** React PWA via Vite
-- **Backend:** Supabase (auth, realtime sync, Postgres storage)
-- **Deploy:** Vercel or Netlify
+- **Frontend:** Next.js (App Router) + React + Tailwind tokens + GSAP (client motion)
+- **Backend:** Supabase (auth, realtime sync, Postgres storage; `@supabase/ssr` for sessions)
+- **Deploy:** Vercel
 - **Pixel art:** generated via Nanobanan Pro from agreed style prompts; placeholders in code first, real sprites swapped in iteratively. Generation is handled by a **separate dev-run pipeline** (see §15) — the app never calls image models itself
 - **Storage philosophy:** cloud-first from day one — same lesson as Gröda, no localStorage as primary store, no risk of losing Oskar's data when the schema changes
 
@@ -516,7 +516,7 @@ The generation pipeline (§15, full design in `gymbros-generation-spec.md`) owns
 - Tuning the IRON multipliers in §6 — first-pass numbers, calibrate against real session data
 - Tuning the 2–3-session ceiling-check window — too short and progression feels jumpy, too long and it feels stalled
 - Data model for a "session" and a "PR" (what fields, how PR detection actually runs)
-- Pixel art for all 5–10 single-tier progression stages per side (currently only Level 1 prompted; v1 renders one combined tier per side — see §3)
+- Pixel art for all 10 single-tier progression stages per side (arc locked, only tier 1 prompted so far; v1 renders one combined tier per side — see §3)
 - Exercise video sources / hosting
 - Whether the Pro Mode header lives across both accounts or is per-user
 - Exact Nanobanan Pro model id + whether loadout bakes run as a Supabase Edge Function (see §15)

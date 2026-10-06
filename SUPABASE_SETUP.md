@@ -1,7 +1,7 @@
 # Supabase setup — Gymbros
 
 The Gymbros Supabase project is **already created and provisioned** (separate from
-Gröda). This file documents what's there and the one manual step left (Google OAuth).
+Gröda). Auth is **email + password only** (no Google OAuth in the app).
 
 ## Project
 
@@ -27,27 +27,45 @@ Tables, RLS, realtime, and storage are live:
 To re-run or inspect, the SQL lives in the migration history / can be re-applied from
 the dashboard SQL editor.
 
-## Manual step: enable Google OAuth
+## Auth URL configuration (required for password reset)
 
-1. Supabase Dashboard → **Authentication → Providers → Google** → enable.
-2. Create OAuth credentials in Google Cloud Console; set the authorized redirect URI to
-   `https://sokuvssuuightppxlqoi.supabase.co/auth/v1/callback`.
-3. Paste the client ID/secret into the Supabase Google provider and save.
-4. Dashboard → **Authentication → URL Configuration** → add your site URLs to
-   *Redirect URLs* (e.g. `http://localhost:5173`, and the Vercel production + preview
-   URLs once deployed).
+Dashboard → **Authentication → URL Configuration**:
 
-## For quick local testing without Google
+- Add **Redirect URLs** for every app origin (password-reset emails redirect here):
+  - `http://localhost:3000/auth/callback`
+  - `http://localhost:3000/update-password`
+  - Production: `https://YOUR_DOMAIN/auth/callback` and `https://YOUR_DOMAIN/update-password`
+  - Vercel preview URLs with the same paths when testing previews
+- **Site URL** should match your primary deployed origin.
 
-Email + password sign-in is wired up too. By default Supabase requires email
-confirmation. For frictionless dev logins, Dashboard → **Authentication → Sign In / Up
-→ Email** → toggle off "Confirm email" (turn it back on for production).
+The app calls `resetPasswordForEmail` with `redirectTo: window.location.origin` and
+shows `UpdatePasswordScreen` on the `PASSWORD_RECOVERY` auth event.
 
-## Env vars
+## Email confirmation (pick one)
+
+By default Supabase requires email confirmation. For a closed 2-user app you can either:
+
+- **Disable confirm email** — Dashboard → **Authentication → Sign In / Up → Email** →
+  toggle off "Confirm email" (simplest for Linus + Oskar), or
+- **Custom SMTP** (Resend/SendGrid) so confirmation + reset emails are reliable in prod.
+
+Default Supabase email is rate-limited and spam-prone.
+
+## Lock down sign-ups (after both accounts exist)
+
+Once Linus + Oskar have accounts, disable open registration (allowlist or disable sign-ups)
+so strangers with the URL cannot create accounts. RLS + pairing protect data, but auth
+accounts would still be open otherwise.
+
+## Env vars (Next.js)
 
 ```
-VITE_SUPABASE_URL=https://sokuvssuuightppxlqoi.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+NEXT_PUBLIC_SUPABASE_URL=https://sokuvssuuightppxlqoi.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ```
 
-Add the same two variables to the Vercel project (Production + Preview).
+Add the same two variables to the Vercel project (Production + Preview). Legacy `VITE_*` names still work locally as a fallback.
+
+## Habits MVP schema
+
+Run [supabase/migrations/20260605_daily_habits.sql](supabase/migrations/20260605_daily_habits.sql) in the SQL editor (table `daily_habits`, partner read RLS, `profiles.protein_target_g`, Realtime publication).

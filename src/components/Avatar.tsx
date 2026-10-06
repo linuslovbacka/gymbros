@@ -64,10 +64,13 @@ export function Avatar({ tier, side, flexing, rusty, equipped, sprite }: AvatarP
     flexing && !rusty ? 'drop-shadow(0 0 10px rgba(232,160,75,0.5))' : '',
   ].filter(Boolean).join(' ') || undefined;
 
-  // Approved loadout bake available → render it (Phase 8 path).
+  // Approved loadout bake available → render it (Phase 8 path). If the sheet has
+  // real multi-frame clips, those carry the motion; otherwise apply the CSS idle
+  // "breathing" fallback (documented static-frame + code-driven-motion path).
   if (sprite) {
+    const animated = !!sprite.atlas && Object.values(sprite.atlas.clips).some((c) => c.frames > 1);
     return (
-      <div style={{ width: '100%', height: '100%', filter, opacity: rusty ? 0.85 : 1, transition: 'all 0.3s ease' }}>
+      <div className={`${animated ? '' : 'avatar-body'}${flexing ? ' is-flexing' : ''}`.trim()} style={{ width: '100%', height: '100%', filter, opacity: rusty ? 0.85 : 1, transition: 'all 0.3s ease' }}>
         <SpriteAnimator imageUrl={sprite.imageUrl} atlas={sprite.atlas} clip={flexing ? 'flex' : 'idle'} flip={side === 'right'} />
       </div>
     );
@@ -92,6 +95,7 @@ export function Avatar({ tier, side, flexing, rusty, equipped, sprite }: AvatarP
   const beltGear = !special && equipped?.waist ? slotColor(equipped, 'waist', PALETTE.pants) : undefined;
 
   return (
+    <div className={`avatar-body${flexing ? ' is-flexing' : ''}`} style={{ width: '100%', height: '100%' }}>
     <svg
       viewBox="0 0 120 200"
       width="100%"
@@ -159,5 +163,6 @@ export function Avatar({ tier, side, flexing, rusty, equipped, sprite }: AvatarP
         </g>
       )}
     </svg>
+    </div>
   );
 }

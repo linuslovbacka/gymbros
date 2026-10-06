@@ -31,7 +31,7 @@ export async function vortexCmd(positional: string[], flags: Record<string, stri
   const vdir = `${prefix}/v${v}`;
 
   log.info('generating frame 0…');
-  const { raw: raw0, cut: cut0 } = await genAndCut(resolved);
+  const { raw: raw0, cut: cut0 } = await genAndCut(resolved, { aspectRatio: '3:4' });
   await upload(`${vdir}/raw/idle_0.png`, raw0, 'image/png');
   await recordImage({ promptVersionId: pv.id, variant: 'raw', clip: 'idle', frameIndex: 0, storagePath: `${vdir}/raw/idle_0.png` });
   await upload(`${vdir}/cut/idle_0.png`, cut0, 'image/png');
@@ -42,7 +42,7 @@ export async function vortexCmd(positional: string[], flags: Record<string, stri
     log.dim(`  loop frame ${i}`);
     const raw = await generateImage(
       framePrompt('the flames swirl and rise slightly to the next frame of the looping fire, same intensity and shape'),
-      { inputImages: [raw0] },
+      { inputImages: [raw0], aspectRatio: '3:4' },
     );
     const cut = await cutout(raw);
     await upload(`${vdir}/cut/idle_${i}.png`, cut, 'image/png');

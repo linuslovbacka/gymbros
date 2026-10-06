@@ -2,7 +2,7 @@
 // string sent to the model. The composed string is what gets snapshotted into
 // prompt_versions — so this is the single place "how a prompt is assembled" lives.
 
-import { BASE_STYLE, ITEM_FRAMING, sideClause } from '../prompts/base-style.ts';
+import { BASE_STYLE, ITEM_FRAMING, SINGLE_FIGURE, sideClause } from '../prompts/base-style.ts';
 import { getPlayer } from '../prompts/players.ts';
 import { getTier } from '../prompts/avatars.ts';
 import { getCosmeticPrompt } from '../prompts/cosmetics.ts';
@@ -17,7 +17,8 @@ export function avatarBasePrompt(playerSlug: string, tier: number): string {
     `CHARACTER IDENTITY: ${player.identity}`,
     t.physique,
     sideClause(player.side),
-    'One single static frame, the neutral resting pose. Do NOT draw multiple poses or a strip.',
+    'Neutral resting pose.',
+    SINGLE_FIGURE,
   ].join('\n\n');
 }
 
@@ -27,7 +28,7 @@ export function framePrompt(motion: string): string {
     'Edit this exact character: keep identity, physique, clothing, palette, flat-block pixel style,',
     'framing, scale, and upper-left lighting IDENTICAL. Same single character on the same flat background.',
     `Change ONLY the pose — now: ${motion}.`,
-    'One single frame. Do NOT draw a strip or multiple poses.',
+    SINGLE_FIGURE,
   ].join(' ');
 }
 
@@ -46,7 +47,8 @@ export function specialPrompt(slug: string, playerSlug: string): string {
     `CHARACTER IDENTITY (kept recognisable): ${player.identity}`,
     `REPLACEMENT: ${cp.fragment}.`,
     sideClause(player.side),
-    'One single static frame, neutral resting pose. Do NOT draw a strip.',
+    'Neutral resting pose.',
+    SINGLE_FIGURE,
   ].join('\n\n');
 }
 
@@ -56,10 +58,10 @@ export function bakePrompt(fragments: string[]): string {
     'Edit this exact character: keep identity, physique, pose, framing, scale, palette, flat-block',
     'pixel style and upper-left lighting IDENTICAL. Same single character on the same flat background.',
     `Now dress the character — add ONLY: ${fragments.join('; ')}.`,
-    'Fit the items naturally to the body. One single frame. Do NOT draw a strip.',
+    `Fit the items naturally to the body. ${SINGLE_FIGURE}`,
   ].join(' ');
 }
 
 export function effectPrompt(stage: VortexStage): string {
-  return [BASE_STYLE, `EFFECT: ${vortexPrompt(stage)}`].join('\n\n');
+  return [BASE_STYLE, `EFFECT: ${vortexPrompt(stage)}`, SINGLE_FIGURE].join('\n\n');
 }

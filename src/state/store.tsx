@@ -1,3 +1,5 @@
+'use client';
+
 import {
   createContext,
   useCallback,
@@ -10,7 +12,7 @@ import {
 } from 'react';
 import type { RealtimePostgresChangesPayload, Session, User } from '@supabase/supabase-js';
 import { supabase, SUPABASE_ENABLED } from '../lib/supabase';
-import type { Profile } from './types';
+import type { HabitsToday, Profile } from './types';
 import { WRITABLE_PROFILE_COLUMNS } from './types';
 import type { Direction, Mode } from '../content/types';
 import type { ProgramStage } from '../content/workouts';
@@ -34,6 +36,7 @@ function todayISO(): string {
 }
 
 export interface CompleteSessionInput {
+  routine?: import('../content/routines').WorkoutRoutine;
   mode: Mode;
   kind: 'full' | 'split';
   splitDirection?: Direction;
@@ -58,9 +61,18 @@ interface AppState {
   profile: Profile | null;
   partner: Profile | null;
   lastSplitDirection?: Direction;
-  signInWithGoogle: () => Promise<void>;
+  habitsToday: HabitsToday | null;
+  partnerHabitsToday: HabitsToday | null;
+  passwordRecovery: boolean;
+  toggleNoSugar: () => Promise<void>;
+  toggleProteinMet: () => Promise<void>;
+  toggleWaterMet: () => Promise<void>;
+  toggleSickDay: () => Promise<void>;
+  setMaintenanceMode: (on: boolean) => void;
   signInWithEmail: (email: string, password: string) => Promise<{ error?: string }>;
   signUpWithEmail: (email: string, password: string) => Promise<{ error?: string }>;
+  resetPasswordForEmail: (email: string) => Promise<{ error?: string }>;
+  updatePassword: (password: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   createPair: () => Promise<string>;
   joinPair: (code: string) => Promise<{ error?: string }>;
@@ -88,6 +100,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [partner, setPartner] = useState<Profile | null>(null);
   const [lastSplitDirection, setLastSplitDirection] = useState<Direction>();
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
+  const [habitsToday, setHabitsToday] = useState<HabitsToday | null>(null);
+  const [partnerHabitsToday, setPartnerHabitsToday] = useState<HabitsToday | null>(null);
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const profileRef = useRef<Profile | null>(null);
@@ -142,6 +157,67 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setPartner((data?.[0] as Profile) ?? null);
   }, []);
 
+  const loadHabitsForUser = useCallback(async (uid: string): Promise<HabitsToday> => {
+    const date = todayISO();
+    const { data, error } = await supabase
+      .from('daily_habits')
+      .select('no_sugar, protein_met, water_met, sick')
+      .eq('user_id', uid)
+      .eq('date', date)
+      .maybeSingle();
+    if (error) {
+      console.error('[gymbros] loadHabits', error);
+      return { no_sugar: false, protein_met: false, water_met: false, sick: false };
+    }
+    return {
+      no_sugar: data?.no_sugar ?? false,
+      protein_met: data?.protein_met ?? false,
+      water_met: data?.water_met ?? false,
+      sick: data?.sick ?? false,
+    };
+  }, []);
+
+  const upsertHabits = useCallback(async (patch: Partial<HabitsToday>) => {
+    const uid = user?.id;
+    if (!uid || !SUPABASE_ENABLED) return;
+    const date = todayISO();
+    const next: HabitsToday = {
+      no_sugar: patch.no_sugar ?? habitsToday?.no_sugar ?? false,
+      protein_met: patch.protein_met ?? habitsToday?.protein_met ?? false,
+      water_met: patch.water_met ?? habitsToday?.water_met ?? false,
+      sick: patch.sick ?? habitsToday?.sick ?? false,
+    };
+    setHabitsToday(next);
+    const { error } = await supabase.from('daily_habits').upsert(
+      { user_id: uid, date, ...next, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id,date' },
+    );
+    if (error) console.error('[gymbros] upsert habits', error);
+  }, [user, habitsToday]);
+
+  const toggleNoSugar = useCallback(async () => {
+    await upsertHabits({ no_sugar: !(habitsToday?.no_sugar ?? false) });
+  }, [habitsToday, upsertHabits]);
+
+  const toggleProteinMet = useCallback(async () => {
+    await upsertHabits({ protein_met: !(habitsToday?.protein_met ?? false) });
+  }, [habitsToday, upsertHabits]);
+
+  const toggleWaterMet = useCallback(async () => {
+    await upsertHabits({ water_met: !(habitsToday?.water_met ?? false) });
+  }, [habitsToday, upsertHabits]);
+
+  const toggleSickDay = useCallback(async () => {
+    await upsertHabits({ sick: !(habitsToday?.sick ?? false) });
+  }, [habitsToday, upsertHabits]);
+
+  const setMaintenanceMode = useCallback(
+    (on: boolean) => {
+      patchProfile({ maintenance_mode: on });
+    },
+    [patchProfile],
+  );
+
   const loadLastSplit = useCallback(async (uid: string) => {
     const { data } = await supabase
       .from('sessions')
@@ -163,18 +239,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setUser(data.session?.user ?? null);
       setReady(true);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e: string, session: Session | null) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event: string, session: Session | null) => {
       setUser(session?.user ?? null);
+      if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true);
     });
     return () => { mounted = false; sub.subscription.unsubscribe(); };
   }, []);
 
   // Load profile when user changes
   useEffect(() => {
-    if (!user) { setProfile(null); setPartner(null); return; }
+    if (!user) {
+      setProfile(null);
+      setPartner(null);
+      setHabitsToday(null);
+      setPartnerHabitsToday(null);
+      return;
+    }
     void loadProfile(user.id);
     void loadLastSplit(user.id);
-  }, [user, loadProfile, loadLastSplit]);
+    void loadHabitsForUser(user.id).then(setHabitsToday);
+  }, [user, loadProfile, loadLastSplit, loadHabitsForUser]);
+
+  useEffect(() => {
+    if (!partner?.user_id) {
+      setPartnerHabitsToday(null);
+      return;
+    }
+    void loadHabitsForUser(partner.user_id).then(setPartnerHabitsToday);
+  }, [partner?.user_id, loadHabitsForUser]);
 
   // Load partner + realtime when pair changes
   useEffect(() => {
@@ -191,15 +283,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (row && row.user_id !== user.id) setPartner(row);
         },
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'daily_habits' },
+        (payload) => {
+          const row = payload.new as {
+            user_id?: string;
+            no_sugar?: boolean;
+            protein_met?: boolean;
+            water_met?: boolean;
+            sick?: boolean;
+          };
+          if (!row?.user_id || row.user_id === user.id) return;
+          if (partnerRef.current?.user_id === row.user_id) {
+            setPartnerHabitsToday({
+              no_sugar: row.no_sugar ?? false,
+              protein_met: row.protein_met ?? false,
+              water_met: row.water_met ?? false,
+              sick: row.sick ?? false,
+            });
+          }
+        },
+      )
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
   }, [user, profile?.pair_id, loadPartner]);
 
   // ─── Auth actions ────────────────────────────────────────────────────────────
-  const signInWithGoogle = useCallback(async () => {
-    await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
-  }, []);
-
   const signInWithEmail = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error: error?.message };
@@ -210,8 +320,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return { error: error?.message };
   }, []);
 
+  const resetPasswordForEmail = useCallback(async (email: string) => {
+    const callback = `${window.location.origin}/auth/callback?next=${encodeURIComponent('/update-password')}`;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: callback });
+    return { error: error?.message };
+  }, []);
+
+  const updatePassword = useCallback(async (password: string) => {
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) return { error: error.message };
+    setPasswordRecovery(false);
+    return {};
+  }, []);
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
+    setPasswordRecovery(false);
     setProfile(null);
     setPartner(null);
   }, []);
@@ -381,7 +505,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (error) console.error('[gymbros] session insert failed', error);
     }
 
-    if (input.kind === 'split' && input.splitDirection) setLastSplitDirection(input.splitDirection);
+    if (
+      (input.routine === 'main' || !input.routine) &&
+      input.kind === 'split' &&
+      input.splitDirection
+    ) {
+      setLastSplitDirection(input.splitDirection);
+    }
     await flushSave();
 
     return { ironEarned: ironTotal, gritEarned, prompts, prs, achievements: unlocked };
@@ -439,9 +569,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     profile,
     partner,
     lastSplitDirection,
-    signInWithGoogle,
+    habitsToday,
+    partnerHabitsToday,
+    passwordRecovery,
+    toggleNoSugar,
+    toggleProteinMet,
+    toggleWaterMet,
+    toggleSickDay,
+    setMaintenanceMode,
     signInWithEmail,
     signUpWithEmail,
+    resetPasswordForEmail,
+    updatePassword,
     signOut,
     createPair,
     joinPair,
@@ -453,7 +592,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     buyCosmetic,
     equipCosmetic,
     unequipSlot,
-  }), [ready, user, profile, partner, lastSplitDirection, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut, createPair, joinPair, pressProMode, completeSession, climbExercise, stepDownExercise, declineExercise, buyCosmetic, equipCosmetic, unequipSlot]);
+  }), [ready, user, profile, partner, lastSplitDirection, habitsToday, partnerHabitsToday, passwordRecovery, toggleNoSugar, toggleProteinMet, toggleWaterMet, toggleSickDay, setMaintenanceMode, signInWithEmail, signUpWithEmail, resetPasswordForEmail, updatePassword, signOut, createPair, joinPair, pressProMode, completeSession, climbExercise, stepDownExercise, declineExercise, buyCosmetic, equipCosmetic, unequipSlot]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

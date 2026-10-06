@@ -29,7 +29,7 @@ export async function cosmeticCmd(positional: string[], flags: Record<string, st
   const vdir = `${prefix}/v${v}`;
 
   log.info('generating standalone item…');
-  const { raw, cut } = await genAndCut(iconPrompt);
+  const { raw, cut } = await genAndCut(iconPrompt, { aspectRatio: '1:1' });
   await upload(`${vdir}/raw.png`, raw, 'image/png');
   await recordImage({ promptVersionId: pv.id, variant: 'raw', storagePath: `${vdir}/raw.png` });
   const icon = await iconFrame(cut);
@@ -55,13 +55,13 @@ export async function cosmeticCmd(positional: string[], flags: Record<string, st
     const sv = await nextVersion(sprefix);
     const svdir = `${sprefix}/v${sv}`;
     log.info('generating special replacement frame 0…');
-    const { raw: sraw, cut: scut } = await genAndCut(sp);
+    const { raw: sraw, cut: scut } = await genAndCut(sp, { aspectRatio: '3:4' });
     await upload(`${svdir}/raw/idle_0.png`, sraw, 'image/png');
     await recordImage({ promptVersionId: spv.id, variant: 'raw', clip: 'idle', frameIndex: 0, storagePath: `${svdir}/raw/idle_0.png` });
     await upload(`${svdir}/cut/idle_0.png`, scut, 'image/png');
     await recordImage({ promptVersionId: spv.id, variant: 'cutout', clip: 'idle', frameIndex: 0, storagePath: `${svdir}/cut/idle_0.png` });
     const { sheetImageId } = await produceSheet({
-      promptVersionId: spv.id, vdir: svdir, frame0Raw: sraw, frame0Cut: scut, clips: ['idle', 'flex'], tier: 6,
+      promptVersionId: spv.id, vdir: svdir, frame0Raw: sraw, frame0Cut: scut, clips: ['idle', 'flex'], tier: 6, aspectRatio: '3:4',
     });
     log.ok(`special sheet → ${svdir}/sheet.png`);
     log.info(`approve the special:  npm run gen -- approve ${sheetImageId}`);
