@@ -3,7 +3,7 @@ import { getExercise } from './exercises';
 import type { ExerciseState, WorkoutItem } from './workouts';
 import { buildWorkout, type BuildOptions } from './workouts';
 
-export type WorkoutRoutine = 'main' | 'skills' | 'glutes';
+export type WorkoutRoutine = 'main' | 'skills' | 'glutes' | 'conditioning';
 
 export const ROUTINE_LABELS: Record<WorkoutRoutine, { title: string; sub: string }> = {
   main: {
@@ -18,7 +18,15 @@ export const ROUTINE_LABELS: Record<WorkoutRoutine, { title: string; sub: string
     title: 'Glute day',
     sub: 'Hypertrophy focus — home or gym variants',
   },
+  conditioning: {
+    title: 'Conditioning (4×4)',
+    sub: 'Norwegian 4×4 — VO₂ max & heart health',
+  },
 };
+
+export function strengthRoutine(routine: WorkoutRoutine): boolean {
+  return routine === 'main' || routine === 'skills' || routine === 'glutes';
+}
 
 function fixedItem(
   exerciseId: string,
@@ -88,6 +96,38 @@ function buildGlutesHomeWorkout(state: ExerciseState): WorkoutItem[] {
   ];
 }
 
+export function buildJumpRopeWarmupItem(state: ExerciseState): WorkoutItem {
+  return fixedItem(
+    'jump_rope',
+    {
+      sets: 1,
+      low: 180,
+      high: 300,
+      timed: true,
+      prescription: '1 x 3-5 min easy (warmup before strength)',
+      rungName: 'Easy continuous',
+    },
+    state,
+  );
+}
+
+function buildConditioningWorkout(state: ExerciseState): WorkoutItem[] {
+  return [
+    fixedItem(
+      'norwegian_4x4',
+      {
+        sets: 4,
+        low: 240,
+        high: 240,
+        timed: true,
+        prescription: '4 x 4 min hard · ~3 min easy between each',
+        rungName: 'Hard interval',
+      },
+      state,
+    ),
+  ];
+}
+
 /** Gym glute day — machines + barbell pattern from your template. */
 function buildGlutesGymWorkout(state: ExerciseState): WorkoutItem[] {
   return [
@@ -117,5 +157,6 @@ export function buildRoutineWorkout(
   if (routine === 'glutes') {
     return mode === 'gym' ? buildGlutesGymWorkout(state) : buildGlutesHomeWorkout(state);
   }
+  if (routine === 'conditioning') return buildConditioningWorkout(state);
   return buildWorkout(opts);
 }

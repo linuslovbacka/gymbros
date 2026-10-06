@@ -353,6 +353,29 @@ const sideHipAbduction: Exercise = {
   ],
 };
 
+const jumpRope: Exercise = {
+  id: 'jump_rope',
+  name: 'Jump rope (warmup)',
+  track: 'calisthenics',
+  body: 'core',
+  category: 'Warmup',
+  ladder: [
+    r('Easy continuous', '1 x 3-5 min', 180, 300, 0.35, { timed: true, sets: 1 }),
+    r('Easy + mobility', '1 x 5 min', 240, 300, 0.4, { timed: true, sets: 1 }),
+  ],
+};
+
+const norwegian4x4: Exercise = {
+  id: 'norwegian_4x4',
+  name: 'Norwegian 4×4 interval',
+  track: 'calisthenics',
+  body: 'core',
+  category: 'Conditioning',
+  ladder: [
+    r('Hard interval', '4 x 4 min hard', 240, 240, 1.2, { timed: true, sets: 4 }),
+  ],
+};
+
 const hipThrust = gymLift('hip_thrust', 'Barbell hip thrust', 'Glutes: Gym', 'lower', 'compound', 40);
 const romanianDeadlift = gymLift('romanian_deadlift', 'Romanian deadlift', 'Glutes: Gym', 'lower', 'compound', 30);
 const cableKickback = gymLift('cable_kickback', 'Cable kickback', 'Glutes: Gym', 'lower', 'isolation', 5);
@@ -368,6 +391,7 @@ const hipAbductionMachine = gymLift(
 export const EXERCISES: Exercise[] = [
   pullUp, pikePushup, invertedRow, pushup, frontLever, dip,
   handstand, lsit, hollow, pistol, nordic, hanging,
+  jumpRope, norwegian4x4,
   gluteBridge, singleLegRdl, stepUpGlute, quadrupedKickback, sideHipAbduction,
   latPulldown, shoulderPress, cableRow, benchPress, dbHighPull, weightedDipGym, deadlift,
   hipThrust, romanianDeadlift, cableKickback, hipAbductionMachine,

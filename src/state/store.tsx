@@ -14,6 +14,7 @@ import type { RealtimePostgresChangesPayload, Session, User } from '@supabase/su
 import { supabase, SUPABASE_ENABLED } from '../lib/supabase';
 import type { HabitsToday, Profile } from './types';
 import { WRITABLE_PROFILE_COLUMNS } from './types';
+import { proteinMetFromLogged, proteinTargetG } from '../content/diet';
 import type { Direction, Mode } from '../content/types';
 import type { ProgramStage } from '../content/workouts';
 import { ironForSession, gritForSession } from '../engine/currency';
@@ -66,7 +67,10 @@ interface AppState {
   passwordRecovery: boolean;
   toggleNoSugar: () => Promise<void>;
   toggleProteinMet: () => Promise<void>;
+  addProteinGrams: (grams: number) => Promise<void>;
+  resetProteinLog: () => Promise<void>;
   toggleWaterMet: () => Promise<void>;
+  toggleStepsMet: () => Promise<void>;
   toggleSickDay: () => Promise<void>;
   setMaintenanceMode: (on: boolean) => void;
   signInWithEmail: (email: string, password: string) => Promise<{ error?: string }>;
@@ -161,18 +165,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const date = todayISO();
     const { data, error } = await supabase
       .from('daily_habits')
-      .select('no_sugar, protein_met, water_met, sick')
+      .select('no_sugar, protein_met, protein_g, water_met, steps_met, sick')
       .eq('user_id', uid)
       .eq('date', date)
       .maybeSingle();
     if (error) {
       console.error('[gymbros] loadHabits', error);
-      return { no_sugar: false, protein_met: false, water_met: false, sick: false };
+      return {
+        no_sugar: false,
+        protein_met: false,
+        protein_g: 0,
+        water_met: false,
+        steps_met: false,
+        sick: false,
+      };
     }
     return {
       no_sugar: data?.no_sugar ?? false,
       protein_met: data?.protein_met ?? false,
+      protein_g: data?.protein_g ?? 0,
       water_met: data?.water_met ?? false,
+      steps_met: data?.steps_met ?? false,
       sick: data?.sick ?? false,
     };
   }, []);
@@ -184,7 +197,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const next: HabitsToday = {
       no_sugar: patch.no_sugar ?? habitsToday?.no_sugar ?? false,
       protein_met: patch.protein_met ?? habitsToday?.protein_met ?? false,
+      protein_g: patch.protein_g ?? habitsToday?.protein_g ?? 0,
       water_met: patch.water_met ?? habitsToday?.water_met ?? false,
+      steps_met: patch.steps_met ?? habitsToday?.steps_met ?? false,
       sick: patch.sick ?? habitsToday?.sick ?? false,
     };
     setHabitsToday(next);
@@ -203,8 +218,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await upsertHabits({ protein_met: !(habitsToday?.protein_met ?? false) });
   }, [habitsToday, upsertHabits]);
 
+  const addProteinGrams = useCallback(
+    async (grams: number) => {
+      if (!Number.isFinite(grams) || grams <= 0) return;
+      const target = proteinTargetG(profileRef.current);
+      const nextG = Math.round((habitsToday?.protein_g ?? 0) + grams);
+      await upsertHabits({
+        protein_g: nextG,
+        protein_met: proteinMetFromLogged(nextG, target),
+      });
+    },
+    [habitsToday, upsertHabits],
+  );
+
+  const resetProteinLog = useCallback(async () => {
+    await upsertHabits({ protein_g: 0, protein_met: false });
+  }, [upsertHabits]);
+
   const toggleWaterMet = useCallback(async () => {
     await upsertHabits({ water_met: !(habitsToday?.water_met ?? false) });
+  }, [habitsToday, upsertHabits]);
+
+  const toggleStepsMet = useCallback(async () => {
+    await upsertHabits({ steps_met: !(habitsToday?.steps_met ?? false) });
   }, [habitsToday, upsertHabits]);
 
   const toggleSickDay = useCallback(async () => {
@@ -291,7 +327,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             user_id?: string;
             no_sugar?: boolean;
             protein_met?: boolean;
+            protein_g?: number;
             water_met?: boolean;
+            steps_met?: boolean;
             sick?: boolean;
           };
           if (!row?.user_id || row.user_id === user.id) return;
@@ -299,7 +337,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             setPartnerHabitsToday({
               no_sugar: row.no_sugar ?? false,
               protein_met: row.protein_met ?? false,
+              protein_g: row.protein_g ?? 0,
               water_met: row.water_met ?? false,
+              steps_met: row.steps_met ?? false,
               sick: row.sick ?? false,
             });
           }
@@ -574,7 +614,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     passwordRecovery,
     toggleNoSugar,
     toggleProteinMet,
+    addProteinGrams,
+    resetProteinLog,
     toggleWaterMet,
+    toggleStepsMet,
     toggleSickDay,
     setMaintenanceMode,
     signInWithEmail,
@@ -592,7 +635,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     buyCosmetic,
     equipCosmetic,
     unequipSlot,
-  }), [ready, user, profile, partner, lastSplitDirection, habitsToday, partnerHabitsToday, passwordRecovery, toggleNoSugar, toggleProteinMet, toggleWaterMet, toggleSickDay, setMaintenanceMode, signInWithEmail, signUpWithEmail, resetPasswordForEmail, updatePassword, signOut, createPair, joinPair, pressProMode, completeSession, climbExercise, stepDownExercise, declineExercise, buyCosmetic, equipCosmetic, unequipSlot]);
+  }), [ready, user, profile, partner, lastSplitDirection, habitsToday, partnerHabitsToday, passwordRecovery, toggleNoSugar, toggleProteinMet, addProteinGrams, resetProteinLog, toggleWaterMet, toggleStepsMet, toggleSickDay, setMaintenanceMode, signInWithEmail, signUpWithEmail, resetPasswordForEmail, updatePassword, signOut, createPair, joinPair, pressProMode, completeSession, climbExercise, stepDownExercise, declineExercise, buyCosmetic, equipCosmetic, unequipSlot]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

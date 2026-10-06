@@ -6,7 +6,9 @@ export interface HabitDayRow {
   date: string;
   no_sugar: boolean;
   protein_met: boolean;
+  protein_g?: number;
   water_met: boolean;
+  steps_met: boolean;
   sick: boolean;
 }
 
@@ -25,7 +27,9 @@ export interface HabitTimelineDay {
 const emptyHabits = (): HabitsToday => ({
   no_sugar: false,
   protein_met: false,
+  protein_g: 0,
   water_met: false,
+  steps_met: false,
   sick: false,
 });
 
@@ -48,7 +52,9 @@ export function buildHabitTimeline(input: {
       ? {
           no_sugar: row.no_sugar,
           protein_met: row.protein_met,
+          protein_g: row.protein_g ?? 0,
           water_met: row.water_met,
+          steps_met: row.steps_met,
           sick: row.sick,
         }
       : emptyHabits();
@@ -66,6 +72,7 @@ export function buildHabitTimeline(input: {
       h.no_sugar ||
       h.protein_met ||
       h.water_met ||
+      h.steps_met ||
       h.sick;
 
     return {

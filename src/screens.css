@@ -681,6 +681,110 @@
 }
 .diet-mode-btn { text-align: center; font-size: 13px; }
 
+.protein-calc {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.protein-calc-summary { display: flex; flex-direction: column; gap: 8px; }
+.protein-calc-nums {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.protein-calc-logged { font-size: 36px; font-weight: 600; letter-spacing: -0.02em; }
+.protein-calc-slash { font-size: 20px; }
+.protein-calc-target { font-size: 18px; color: var(--muted); }
+.protein-calc-caption { margin: 0; font-size: 13px; }
+.protein-calc-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+  overflow: hidden;
+}
+.protein-calc-bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--amber);
+  border-radius: 3px;
+  transition: width 0.2s ease;
+}
+.protein-calc-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.protein-calc-chip {
+  flex: 1 1 calc(50% - 4px);
+  min-width: 72px;
+  padding: 10px 8px;
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+}
+.protein-calc-row {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+.protein-calc-input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+}
+.protein-calc-add-btn { flex-shrink: 0; padding-left: 18px; padding-right: 18px; }
+.protein-calc-reset {
+  font-size: 12px;
+  padding: 8px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  text-decoration: underline;
+}
+
+.protein-log--home {
+  gap: 10px;
+  padding: 12px 14px;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2, var(--surface));
+}
+.protein-log--home .protein-calc-logged { font-size: 28px; }
+.protein-log--home .protein-calc-input { padding: 10px 12px; font-size: 16px; }
+.protein-log--home .protein-calc-add-btn { font-size: 13px; padding: 10px 14px; }
+.protein-log--home .protein-calc-chip { flex: 1 1 calc(25% - 6px); padding: 8px 4px; font-size: 13px; }
+.protein-log-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.protein-log-title { font-weight: 600; font-size: 15px; }
+.protein-log-mark {
+  width: 1.25rem;
+  text-align: center;
+  font-weight: 700;
+  color: var(--muted-2);
+}
+.protein-log-mark.done { color: var(--amber); }
+.protein-log-caption { margin: 0; font-size: 12px; }
+.protein-log-readonly { margin: 0; }
+
 .sick-day-btn {
   width: 100%;
   margin-bottom: 10px;
@@ -848,6 +952,113 @@
   font-size: 11px;
   line-height: 1.4;
   margin: 8px 0 0;
+}
+
+.superset-round-label {
+  font-family: var(--font-display);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  margin: 0 0 4px;
+}
+.superset-hint {
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 0 0 12px;
+}
+.video-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.video-tab {
+  flex: 1;
+  padding: 8px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--bg-2);
+  box-shadow: var(--shadow-card);
+  color: var(--muted);
+}
+.video-tab.active {
+  color: var(--text);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.superset-sets {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.superset-set-block {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-2);
+  box-shadow: var(--shadow-card);
+}
+.superset-set-label {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--muted);
+}
+
+.warmup-intro {
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 0 0 12px;
+  padding: 0 4px;
+}
+.conditioning-guide {
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-2);
+  box-shadow: var(--shadow-card);
+}
+.conditioning-guide-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  margin: 0 0 8px;
+}
+.conditioning-guide p {
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 0 0 6px;
+}
+.interval-recovery-note {
+  font-size: 12px;
+  margin: 0 0 8px;
+}
+
+.ceiling-prompt {
+  margin: 12px 0 16px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 77, 36, 0.08);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+.ceiling-prompt-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  margin: 0 0 6px;
+}
+.ceiling-prompt-body {
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 0 0 12px;
+}
+.ceiling-prompt-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ceiling-prompt-actions .btn {
+  width: 100%;
+  font-size: 13px;
 }
 
 .schedule-sick-note {

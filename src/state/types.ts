@@ -11,12 +11,18 @@ export interface DailyHabitsRow {
   date: string;
   no_sugar: boolean;
   protein_met: boolean;
+  /** Grams logged today (diet calculator). */
+  protein_g: number;
   water_met: boolean;
+  steps_met: boolean;
   sick: boolean;
   updated_at?: string;
 }
 
-export type HabitsToday = Pick<DailyHabitsRow, 'no_sugar' | 'protein_met' | 'water_met' | 'sick'>;
+export type HabitsToday = Pick<
+  DailyHabitsRow,
+  'no_sugar' | 'protein_met' | 'protein_g' | 'water_met' | 'steps_met' | 'sick'
+>;
 
 /** Mirrors the `profiles` row. JSONB columns are typed loosely for Phase 1. */
 export interface Profile {

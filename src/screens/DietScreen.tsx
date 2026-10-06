@@ -9,6 +9,7 @@ import {
   proteinTargetG,
   SICK_DAY_TRAINING_NOTE,
 } from '@/content/diet';
+import { ProteinCalculator } from '@/components/ProteinCalculator';
 import { habitScore } from '@/lib/habits-score';
 
 const TODAY = () => new Date().toISOString().slice(0, 10);
@@ -19,7 +20,14 @@ export function DietScreen() {
 
   const proteinTarget = proteinTargetG(profile);
   const goals = dietGoals(proteinTarget);
-  const today = habitsToday ?? { no_sugar: false, protein_met: false, water_met: false, sick: false };
+  const today = habitsToday ?? {
+    no_sugar: false,
+    protein_met: false,
+    protein_g: 0,
+    water_met: false,
+    steps_met: false,
+    sick: false,
+  };
   const trained = profile.streak_last_date === TODAY();
   const { done, total } = habitScore(today, trained);
   const maintenance = profile.maintenance_mode ?? false;
@@ -75,27 +83,30 @@ export function DietScreen() {
       </section>
 
       <section className="stack diet-section">
-        <h2 className="section-title">Goals</h2>
+        <h2 className="section-title">Protein</h2>
+        <p className="muted diet-lead">Same log as home — add grams until you hit your target.</p>
+        <ProteinCalculator profile={profile} />
+      </section>
+
+      <section className="stack diet-section">
+        <h2 className="section-title">Other goals</h2>
         <ul className="diet-list">
-          {goals.map((g) => (
-            <li key={g.id} className="diet-card">
-              <div className="diet-card-head">
-                <span className="diet-card-title">{g.title}</span>
-                {g.targetLabel && <span className="diet-target">{g.targetLabel}</span>}
-              </div>
-              <p className="diet-card-detail muted">{g.detail}</p>
-              {g.id === 'protein' && (
-                <span className={`diet-today-pill ${today.protein_met ? 'done' : ''}`}>
-                  {today.protein_met ? 'Hit today' : 'Open'}
-                </span>
-              )}
-              {g.id === 'water' && (
-                <span className={`diet-today-pill ${today.water_met ? 'done' : ''}`}>
-                  {today.water_met ? 'Hit today' : 'Open'}
-                </span>
-              )}
-            </li>
-          ))}
+          {goals
+            .filter((g) => g.id !== 'protein')
+            .map((g) => (
+              <li key={g.id} className="diet-card">
+                <div className="diet-card-head">
+                  <span className="diet-card-title">{g.title}</span>
+                  {g.targetLabel && <span className="diet-target">{g.targetLabel}</span>}
+                </div>
+                <p className="diet-card-detail muted">{g.detail}</p>
+                {g.id === 'water' && (
+                  <span className={`diet-today-pill ${today.water_met ? 'done' : ''}`}>
+                    {today.water_met ? 'Hit today' : 'Open'}
+                  </span>
+                )}
+              </li>
+            ))}
         </ul>
       </section>
 

@@ -30,7 +30,7 @@ const MEDIA: Record<string, ExerciseMedia & { rungs?: Record<string, Partial<Exe
     ],
   },
   pike_pushup: {
-    youtubeVideoId: 'sposDXWEB0A',
+    youtubeVideoId: '0mdSHXsgj4Y',
     credit: 'Demo: Calisthenicmovement (YouTube)',
     tips: [
       'Hips high, head between arms — think inverted V.',
@@ -57,8 +57,8 @@ const MEDIA: Record<string, ExerciseMedia & { rungs?: Record<string, Partial<Exe
     ],
   },
   front_lever: {
-    youtubeVideoId: 'pSHjTRCQ6ws',
-    credit: 'Demo: front-lever progressions (YouTube)',
+    youtubeVideoId: 'uA0jySD4R8k',
+    credit: 'Demo: THENX — front lever progressions (YouTube)',
     tips: [
       'Depress and protract shoulders — push the bar away from you.',
       'Posterior pelvic tilt; keep body rigid like a board.',
@@ -66,7 +66,7 @@ const MEDIA: Record<string, ExerciseMedia & { rungs?: Record<string, Partial<Exe
     ],
   },
   dip: {
-    youtubeVideoId: '2z8JmcrW-5Y',
+    youtubeVideoId: 'yN6Q1UI_xkE',
     credit: 'Demo: Calisthenicmovement (YouTube)',
     tips: [
       'Shoulders down and back before you descend.',
@@ -75,8 +75,8 @@ const MEDIA: Record<string, ExerciseMedia & { rungs?: Record<string, Partial<Exe
     ],
   },
   handstand: {
-    youtubeVideoId: 'h3G-Kon4kOo',
-    credit: 'Demo: handstand basics (YouTube)',
+    youtubeVideoId: '_gntsmIZvbI',
+    credit: 'Demo: THENX — handstand hold progressions (YouTube)',
     tips: [
       'Stack wrists, shoulders, hips — squeeze glutes and quads.',
       'Look at the floor between your hands; balance with fingers.',
@@ -93,8 +93,8 @@ const MEDIA: Record<string, ExerciseMedia & { rungs?: Record<string, Partial<Exe
     ],
   },
   hollow: {
-    youtubeVideoId: 'pSHjTRCQ6ws',
-    credit: 'Demo: hollow body hold (YouTube)',
+    youtubeVideoId: 'LlDNef_Ztsc',
+    credit: 'Demo: hollow body hold progression (YouTube)',
     tips: [
       'Low back glued to the floor — if it arches, shorten the lever.',
       'Ribs down, chin slightly tucked.',
@@ -102,7 +102,7 @@ const MEDIA: Record<string, ExerciseMedia & { rungs?: Record<string, Partial<Exe
     ],
   },
   pistol: {
-    youtubeVideoId: 'vQkmQMsKl40',
+    youtubeVideoId: 'vq5-vdgJc0I',
     credit: 'Demo: pistol squat progressions (YouTube)',
     tips: [
       'Sit back on the working leg; opposite leg forward for counterbalance.',
@@ -111,7 +111,7 @@ const MEDIA: Record<string, ExerciseMedia & { rungs?: Record<string, Partial<Exe
     ],
   },
   nordic: {
-    youtubeVideoId: 'FyV8Hfw2i_s',
+    youtubeVideoId: 'NZ31eKoPeIo',
     credit: 'Demo: Nordic curl (YouTube)',
     tips: [
       'Anchor feet securely; body straight from knees to head.',
@@ -120,7 +120,7 @@ const MEDIA: Record<string, ExerciseMedia & { rungs?: Record<string, Partial<Exe
     ],
   },
   hanging: {
-    youtubeVideoId: 'eQjwA1wSmWI',
+    youtubeVideoId: '0HBhuaD_S7M',
     credit: 'Demo: dead hang / decompression (YouTube)',
     tips: [
       'Relax grip slightly between sets if forearms pump up.',
@@ -156,7 +156,7 @@ const MEDIA: Record<string, ExerciseMedia & { rungs?: Record<string, Partial<Exe
     ],
   },
   bench_press: {
-    youtubeVideoId: 'vcBig73ojbE',
+    youtubeVideoId: 'rT7DgCr-3pg',
     credit: 'Demo: bench press setup (YouTube)',
     tips: [
       'Feet planted, shoulder blades pinched into the bench.',
@@ -165,8 +165,8 @@ const MEDIA: Record<string, ExerciseMedia & { rungs?: Record<string, Partial<Exe
     ],
   },
   db_high_pull: {
-    youtubeVideoId: 't2b8mD9N7k0',
-    credit: 'Demo: high pull / upright row style (YouTube)',
+    youtubeVideoId: 'Li4g5p6s2eM',
+    credit: 'Demo: high pull (KB; same hip-drive pull as DB high pull)',
     tips: [
       'Lead with elbows; wrists relaxed — not a shrug-only motion.',
       'Keep bar/dumbbells close to the body.',
@@ -174,7 +174,7 @@ const MEDIA: Record<string, ExerciseMedia & { rungs?: Record<string, Partial<Exe
     ],
   },
   weighted_dip: {
-    youtubeVideoId: '2z8JmcrW-5Y',
+    youtubeVideoId: 'yN6Q1UI_xkE',
     credit: 'Demo: dip form (YouTube)',
     tips: [
       'Same dip form as bodyweight — added load demands tighter core.',
@@ -183,8 +183,8 @@ const MEDIA: Record<string, ExerciseMedia & { rungs?: Record<string, Partial<Exe
     ],
   },
   deadlift: {
-    youtubeVideoId: 'op9kVnGB0WU',
-    credit: 'Demo: Squat University — deadlift (YouTube)',
+    youtubeVideoId: 'ytGaGIn3SjE',
+    credit: 'Demo: deadlift form (YouTube)',
     tips: [
       'Bar over mid-foot; shins to bar, hips not squat-low.',
       'Lats tight — “protect your armpits”.',
@@ -250,6 +250,20 @@ const MEDIA: Record<string, ExerciseMedia & { rungs?: Record<string, Partial<Exe
     tips: [
       'Sit neutral; press knees out through the pads.',
       'Control the return — don’t let the weight slam.',
+    ],
+  },
+  jump_rope: {
+    tips: [
+      'Stay on the balls of your feet — small, quiet hops.',
+      'Elbows in, wrists turn the rope; keep shoulders relaxed.',
+      'Easy pace only before strength — you should feel warm, not smoked.',
+    ],
+  },
+  norwegian_4x4: {
+    tips: [
+      'Hard = ~85–95% max HR: heavy breathing but form stays controlled.',
+      'Take the full ~3 min easy between intervals — walk or very light spin.',
+      'Run, row, bike, or incline walk work best; rope is OK for fitness but hard to hold true 4×4 on rope alone.',
     ],
   },
 };

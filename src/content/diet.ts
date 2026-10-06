@@ -6,6 +6,10 @@ export const MAINTENANCE_PROTEIN_BONUS_G = 25;
 
 export const WATER_TARGET_LABEL = '1.5–2 L / day';
 
+export function proteinMetFromLogged(loggedG: number, targetG: number): boolean {
+  return loggedG >= targetG;
+}
+
 export function proteinTargetG(profile?: {
   protein_target_g?: number;
   maintenance_mode?: boolean;

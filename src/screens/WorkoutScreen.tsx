@@ -2,32 +2,67 @@
 
 import { useMemo, useState } from 'react';
 import { useApp } from '../state/store';
+import {
+  ceilingPromptCopy,
+  nextRungWorkoutItem,
+  suggestedGymBumpKg,
+  workingSetsHitCeiling,
+} from '../content/progressive-overload';
 import { ExerciseGuide } from '../components/ExerciseGuide';
 import { getExercise } from '../content/exercises';
+import { JUMP_ROPE_WARMUP_GUIDE, NORWEGIAN_4X4_GUIDE } from '../content/conditioning';
 import {
+  buildJumpRopeWarmupItem,
   buildRoutineWorkout,
   ROUTINE_LABELS,
+  strengthRoutine,
   type WorkoutRoutine,
 } from '../content/routines';
 import { nextSplitDirection, type WorkoutItem } from '../content/workouts';
 import type { Direction, Mode } from '../content/types';
 import type { LoggedEntry } from '../engine/types';
+import { SupersetLogPhase } from '@/components/SupersetLogPhase';
 import { canShowGluteRoutine } from '@/lib/personal-routines';
+import { useSupersetFlow } from '@/lib/workout-superset';
 
 export interface SessionDraft {
   routine: WorkoutRoutine;
   mode: Mode;
   kind: 'full' | 'split';
+  flow?: 'classic' | 'superset';
   splitDirection?: Direction;
   entries: LoggedEntry[];
 }
 
-type Phase = 'routine' | 'mode' | 'homekind' | 'log';
+type Phase = 'routine' | 'mode' | 'homekind' | 'warmup' | 'log';
 
 function parseInitialRoutine(raw: string | null | undefined, showGlutes: boolean): WorkoutRoutine | null {
-  if (raw === 'main' || raw === 'skills') return raw;
+  if (raw === 'main' || raw === 'skills' || raw === 'conditioning') return raw;
   if (raw === 'glutes' && showGlutes) return 'glutes';
   return null;
+}
+
+function goToLogOrWarmup(
+  routine: WorkoutRoutine,
+  setPhase: (p: Phase) => void,
+  profile: { program_stage: string },
+  mode: Mode,
+  setKind: (k: 'full' | 'split') => void,
+) {
+  if (routine === 'conditioning') {
+    setPhase('log');
+    return;
+  }
+  if (routine === 'main' && mode === 'home' && profile.program_stage !== 'standard') {
+    setKind('full');
+    setPhase('warmup');
+    return;
+  }
+  if (strengthRoutine(routine)) {
+    setPhase('warmup');
+    return;
+  }
+  setPhase('log');
 }
 
 export function WorkoutScreen({
@@ -46,27 +81,38 @@ export function WorkoutScreen({
   const preset = parseInitialRoutine(initialRoutineParam, showGlutes);
 
   const [routine, setRoutine] = useState<WorkoutRoutine>(preset ?? 'main');
-  const [phase, setPhase] = useState<Phase>(preset ? 'mode' : 'routine');
+  const [phase, setPhase] = useState<Phase>(() => {
+    if (preset === 'conditioning') return 'log';
+    if (preset) return 'mode';
+    return 'routine';
+  });
   const [mode, setMode] = useState<Mode>('home');
   const [kind, setKind] = useState<'full' | 'split'>('full');
+  const [includeJumpRope, setIncludeJumpRope] = useState(false);
 
   const splitDirection = useMemo(() => nextSplitDirection(lastSplitDirection), [lastSplitDirection]);
 
   const items = useMemo<WorkoutItem[]>(() => {
     if (!profile || phase !== 'log') return [];
-    return buildRoutineWorkout(routine, {
+    const base = buildRoutineWorkout(routine, {
       mode,
       stage: profile.program_stage,
       state: profile.exercise_state,
       kind,
       splitDirection,
     });
-  }, [profile, phase, routine, mode, kind, splitDirection]);
+    if (includeJumpRope && strengthRoutine(routine)) {
+      return [buildJumpRopeWarmupItem(profile.exercise_state), ...base];
+    }
+    return base;
+  }, [profile, phase, routine, mode, kind, splitDirection, includeJumpRope]);
 
   if (!profile) return null;
 
   if (phase === 'routine') {
-    const options: WorkoutRoutine[] = showGlutes ? ['main', 'skills', 'glutes'] : ['main', 'skills'];
+    const options: WorkoutRoutine[] = showGlutes
+      ? ['main', 'skills', 'glutes', 'conditioning']
+      : ['main', 'skills', 'conditioning'];
     return (
       <div className="screen">
         <Topbar onBack={onCancel} title="What today?" />
@@ -80,7 +126,13 @@ export function WorkoutScreen({
                 sub={sub}
                 onClick={() => {
                   setRoutine(id);
-                  setPhase('mode');
+                  if (id === 'conditioning') {
+                    setMode('home');
+                    setKind('full');
+                    setPhase('log');
+                  } else {
+                    setPhase('mode');
+                  }
                 }}
               />
             );
@@ -100,14 +152,13 @@ export function WorkoutScreen({
             sub="Rings, parallettes, vest, DB/KB"
             onClick={() => {
               setMode('home');
-              const beginner = profile.program_stage !== 'standard';
-              if (routine === 'main' && beginner) {
+              if (routine === 'main' && profile.program_stage !== 'standard') {
                 setKind('full');
-                setPhase('log');
+                setPhase('warmup');
               } else if (routine === 'main') {
                 setPhase('homekind');
               } else {
-                setPhase('log');
+                goToLogOrWarmup(routine, setPhase, profile, 'home', setKind);
               }
             }}
           />
@@ -117,7 +168,7 @@ export function WorkoutScreen({
             onClick={() => {
               setMode('gym');
               setKind('full');
-              setPhase('log');
+              goToLogOrWarmup(routine, setPhase, profile, 'gym', setKind);
             }}
           />
         </div>
@@ -136,7 +187,7 @@ export function WorkoutScreen({
             sub={isBeginner ? `Beginner program · ${profile.program_stage.toUpperCase()}` : 'Every direction, ~20 min'}
             onClick={() => {
               setKind('full');
-              setPhase('log');
+              setPhase('warmup');
             }}
           />
           {!isBeginner && (
@@ -145,7 +196,7 @@ export function WorkoutScreen({
               sub={`Next up: ${splitDirection.toUpperCase()}`}
               onClick={() => {
                 setKind('split');
-                setPhase('log');
+                setPhase('warmup');
               }}
             />
           )}
@@ -154,10 +205,63 @@ export function WorkoutScreen({
     );
   }
 
+  if (phase === 'warmup') {
+    return (
+      <div className="screen">
+        <Topbar
+          onBack={() => {
+            if (routine === 'main' && mode === 'home' && profile.program_stage === 'standard') {
+              setPhase('homekind');
+            } else {
+              setPhase('mode');
+            }
+          }}
+          title="Warmup"
+        />
+        <p className="warmup-intro muted">{JUMP_ROPE_WARMUP_GUIDE}</p>
+        <div className="choice">
+          <ChoiceBtn
+            label="Jump rope ~5 min"
+            sub="Easy pace before strength"
+            onClick={() => {
+              setIncludeJumpRope(true);
+              setPhase('log');
+            }}
+          />
+          <ChoiceBtn
+            label="Skip warmup"
+            sub="Go straight to the workout"
+            onClick={() => {
+              setIncludeJumpRope(false);
+              setPhase('log');
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
   const logBack = () => {
-    if (routine === 'main' && mode === 'home') setPhase('homekind');
+    if (strengthRoutine(routine)) setPhase('warmup');
+    else if (routine === 'main' && mode === 'home') setPhase('homekind');
     else setPhase('mode');
   };
+
+  const superset = useSupersetFlow({ mode, routine });
+
+  if (superset) {
+    return (
+      <SupersetLogPhase
+        items={items}
+        routine={routine}
+        mode={mode}
+        kind={kind}
+        splitDirection={splitDirection}
+        onBack={logBack}
+        onFinish={onFinish}
+      />
+    );
+  }
 
   return (
     <LogPhase
@@ -189,15 +293,25 @@ function LogPhase({
   onBack: () => void;
   onFinish: (d: SessionDraft) => void;
 }) {
+  const { climbExercise } = useApp();
+  const [logItems, setLogItems] = useState<WorkoutItem[]>(() => items);
   const [idx, setIdx] = useState(0);
   const [values, setValues] = useState<number[][]>(() => items.map((it) => Array(it.sets).fill(it.low)));
   const [weights, setWeights] = useState<number[][]>(() =>
     items.map((it) => Array(it.sets).fill(it.weightKg ?? 0)),
   );
+  const [accessoryWeight, setAccessoryWeight] = useState<boolean[]>(() => items.map(() => false));
+  const [ceilingDismissed, setCeilingDismissed] = useState<boolean[]>(() => items.map(() => false));
 
-  const item = items[idx];
+  const item = logItems[idx]!;
   const ex = getExercise(item.exerciseId);
-  const isLast = idx === items.length - 1;
+  const isLast = idx === logItems.length - 1;
+  const showWeight =
+    ex.track === 'gym' || accessoryWeight[idx];
+  const atCeiling = workingSetsHitCeiling(values[idx] ?? [], item.sets, item.high);
+  const showCeilingPrompt = atCeiling && !ceilingDismissed[idx];
+  const nextRung = ex.track === 'calisthenics' ? nextRungWorkoutItem(item) : null;
+  const { title: ceilingTitle, body: ceilingBody } = ceilingPromptCopy(item, ex.track);
 
   function setVal(s: number, v: number) {
     setValues((prev) => prev.map((row, i) => (i === idx ? row.map((x, j) => (j === s ? Math.max(0, v) : x)) : row)));
@@ -206,10 +320,40 @@ function LogPhase({
     setWeights((prev) => prev.map((row, i) => (i === idx ? row.map((x, j) => (j === s ? Math.max(0, v) : x)) : row)));
   }
 
+  function dismissCeilingPrompt() {
+    setCeilingDismissed((prev) => prev.map((d, i) => (i === idx ? true : d)));
+  }
+
+  function enableAccessoryWeight() {
+    setAccessoryWeight((prev) => prev.map((on, i) => (i === idx ? true : on)));
+    dismissCeilingPrompt();
+  }
+
+  function applyHarderVariation() {
+    if (!nextRung) return;
+    climbExercise(item.exerciseId);
+    setLogItems((prev) => prev.map((it, i) => (i === idx ? nextRung : it)));
+    setValues((prev) =>
+      prev.map((row, i) => (i === idx ? Array(nextRung.sets).fill(nextRung.low) : row)),
+    );
+    setWeights((prev) =>
+      prev.map((row, i) => (i === idx ? Array(nextRung.sets).fill(nextRung.weightKg ?? 0) : row)),
+    );
+    dismissCeilingPrompt();
+  }
+
+  function bumpGymWeightNow() {
+    const base = weights[idx]?.[0] ?? item.weightKg ?? 0;
+    const bumped = suggestedGymBumpKg(item.exerciseId, base);
+    setWeights((prev) => prev.map((row, i) => (i === idx ? row.map(() => bumped) : row)));
+    dismissCeilingPrompt();
+  }
+
   function finish() {
-    const entries: LoggedEntry[] = items.map((it, i) => {
+    const entries: LoggedEntry[] = logItems.map((it, i) => {
       const e = getExercise(it.exerciseId);
       const mult = e.track === 'gym' ? 0 : e.ladder[it.rungIndex]?.ironMultiplier ?? 1;
+      const includeWeight = e.track === 'gym' || accessoryWeight[i];
       return {
         exerciseId: it.exerciseId,
         track: e.track,
@@ -219,13 +363,17 @@ function LogPhase({
         perSide: it.perSide,
         ironMultiplier: mult,
         target: { low: it.low, high: it.high, sets: it.sets },
-        sets: values[i].map((v, j) => ({ value: v, weightKg: e.track === 'gym' ? weights[i][j] : undefined })),
+        sets: values[i].map((v, j) => ({
+          value: v,
+          weightKg: includeWeight ? weights[i][j] : undefined,
+        })),
       };
     });
     onFinish({
       routine,
       mode,
       kind,
+      flow: 'classic',
       splitDirection: kind === 'split' ? splitDirection : undefined,
       entries,
     });
@@ -236,27 +384,69 @@ function LogPhase({
 
   return (
     <div className="screen">
-      <Topbar onBack={idx === 0 ? onBack : () => setIdx(idx - 1)} title={`${sessionTitle} · ${idx + 1}/${items.length}`} />
+      <Topbar onBack={idx === 0 ? onBack : () => setIdx(idx - 1)} title={`${sessionTitle} · ${idx + 1}/${logItems.length}`} />
 
       <div className="progress-dots">
-        {items.map((_, i) => (
+        {logItems.map((_, i) => (
           <span key={i} className={`d ${i < idx ? 'done' : ''} ${i === idx ? 'current' : ''}`} />
         ))}
       </div>
 
+      {routine === 'conditioning' && idx === 0 && (
+        <div className="conditioning-guide">
+          <p className="conditioning-guide-title">{NORWEGIAN_4X4_GUIDE.title}</p>
+          <p className="muted">{NORWEGIAN_4X4_GUIDE.intro}</p>
+          <p className="muted">{NORWEGIAN_4X4_GUIDE.intervals}</p>
+          <p className="muted tiny">{NORWEGIAN_4X4_GUIDE.when}</p>
+        </div>
+      )}
+
       <div className="exercise-card">
         <ExerciseGuide exerciseId={item.exerciseId} rungName={item.rungName} />
+        {item.exerciseId === 'norwegian_4x4' && (
+          <p className="interval-recovery-note muted">
+            After you log this interval, take ~3 minutes easy before the next set.
+          </p>
+        )}
         <h2 className="exercise-name">{item.name}</h2>
         <div className="exercise-rung">{item.rungName}</div>
         <div className="exercise-prescription">
           Target: {item.prescription}{item.perSide ? ' (per side)' : ''}
         </div>
 
+        {showCeilingPrompt && (
+          <div className="ceiling-prompt" role="status">
+            <p className="ceiling-prompt-title">{ceilingTitle}</p>
+            <p className="ceiling-prompt-body muted">{ceilingBody}</p>
+            <div className="ceiling-prompt-actions">
+              {ex.track === 'gym' ? (
+                <button type="button" className="btn btn-primary" onClick={bumpGymWeightNow}>
+                  Add weight for next sets
+                </button>
+              ) : (
+                <>
+                  <button type="button" className="btn btn-primary" onClick={enableAccessoryWeight}>
+                    Log extra load (kg)
+                  </button>
+                  {nextRung && (
+                    <button type="button" className="btn" onClick={applyHarderVariation}>
+                      Try: {nextRung.rungName}
+                    </button>
+                  )}
+                </>
+              )}
+              <button type="button" className="btn" onClick={dismissCeilingPrompt}>
+                Stay here this session
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="set-list">
           {Array.from({ length: item.sets }).map((_, s) => (
             <div className="set-row" key={s}>
               <span className="set-no">Set {s + 1}</span>
-              {ex.track === 'gym' && (
+              {showWeight && (
                 <div className="set-input">
                   <button type="button" className="stepper" onClick={() => setWeight(s, (weights[idx][s] ?? 0) - 2.5)}>-</button>
                   <input

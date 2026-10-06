@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
+import { ProteinLogPanel, ProteinLogSummary } from '@/components/ProteinLogPanel';
 import { proteinTargetG, WATER_TARGET_LABEL } from '@/content/diet';
 import { habitScore } from '@/lib/habits-score';
 import { useApp } from '@/state/store';
@@ -15,10 +16,14 @@ function trainingDone(profile: Profile | null): boolean {
   return profile?.streak_last_date === TODAY();
 }
 
+const STEPS_TARGET_LABEL = '~10,000 steps / day';
+
 const emptyHabits: HabitsToday = {
   no_sugar: false,
   protein_met: false,
+  protein_g: 0,
   water_met: false,
+  steps_met: false,
   sick: false,
 };
 
@@ -74,8 +79,8 @@ export function DailyChecks({ partnerProfile }: { partnerProfile?: Profile | nul
     habitsToday,
     partnerHabitsToday,
     toggleNoSugar,
-    toggleProteinMet,
     toggleWaterMet,
+    toggleStepsMet,
     toggleSickDay,
   } = useApp();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -85,7 +90,7 @@ export function DailyChecks({ partnerProfile }: { partnerProfile?: Profile | nul
   useGSAP(
     () => {
       if (prefersReducedMotion() || !rootRef.current) return;
-      gsap.from(rootRef.current.querySelectorAll('.daily-check'), {
+      gsap.from(rootRef.current.querySelectorAll('.daily-check, .protein-log--home'), {
         opacity: 0,
         y: 8,
         duration: NOTHING_DURATION_MED,
@@ -98,7 +103,6 @@ export function DailyChecks({ partnerProfile }: { partnerProfile?: Profile | nul
 
   if (!profile) return null;
 
-  const proteinTarget = proteinTargetG(profile);
   const mine = habitsToday ?? emptyHabits;
   const trained = trainingDone(profile);
   const { done, total } = habitScore(mine, trained);
@@ -139,17 +143,18 @@ export function DailyChecks({ partnerProfile }: { partnerProfile?: Profile | nul
       </button>
 
       <CheckRow label="No sugar" done={mine.no_sugar} onToggle={() => void toggleNoSugar()} />
-      <CheckRow
-        label="Protein"
-        sub={`${proteinTarget} g target`}
-        done={mine.protein_met}
-        onToggle={() => void toggleProteinMet()}
-      />
+      <ProteinLogPanel profile={profile} variant="home" />
       <CheckRow
         label="Water"
         sub={WATER_TARGET_LABEL}
         done={mine.water_met}
         onToggle={() => void toggleWaterMet()}
+      />
+      <CheckRow
+        label="Steps"
+        sub={STEPS_TARGET_LABEL}
+        done={mine.steps_met}
+        onToggle={() => void toggleStepsMet()}
       />
 
       {mine.sick ? (
@@ -163,8 +168,13 @@ export function DailyChecks({ partnerProfile }: { partnerProfile?: Profile | nul
           <div className="tiny">Bro today</div>
           {bro.habits.sick && <div className="tiny sick-bro-note">Rest day (sick)</div>}
           <CheckRow label="No sugar" done={bro.habits.no_sugar} readOnly />
-          <CheckRow label="Protein" done={bro.habits.protein_met} readOnly />
+          <ProteinLogSummary
+            logged={bro.habits.protein_g ?? 0}
+            target={proteinTargetG(partnerProfile ?? undefined)}
+            met={bro.habits.protein_met}
+          />
           <CheckRow label="Water" done={bro.habits.water_met} readOnly />
+          <CheckRow label="Steps" done={bro.habits.steps_met} readOnly />
           {bro.habits.sick ? (
             <CheckRow label="Training" sub="Rest" done readOnly />
           ) : (

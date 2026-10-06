@@ -26,7 +26,9 @@ export function DoneScreen({ draft, onClose }: { draft: SessionDraft; onClose: (
   const [result, setResult] = useState<ResultState>();
 
   const useGymProgress =
-    draft.mode === 'gym' && draft.routine !== 'skills';
+    draft.mode === 'gym' &&
+    draft.routine !== 'skills' &&
+    draft.routine !== 'conditioning';
   const progressOptions = useGymProgress ? GYM_PROGRESS : CALISTHENICS_PROGRESS;
 
   async function submit() {
