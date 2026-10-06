@@ -6,6 +6,8 @@
 export interface ExerciseMedia {
   /** YouTube video ID for iframe embed (youtube-nocookie.com/embed/{id}). */
   youtubeVideoId?: string;
+  /** Start playback at this second (chapters / follow-along segments). */
+  youtubeStartSec?: number;
   /** Fallback when no embed ID is set. */
   watchUrl?: string;
   tips: string[];
@@ -266,6 +268,73 @@ const MEDIA: Record<string, ExerciseMedia & { rungs?: Record<string, Partial<Exe
       'Run, row, bike, or incline walk work best; rope is OK for fitness but hard to hold true 4×4 on rope alone.',
     ],
   },
+  /** Demos: The Bodyweight Warrior — “The Flexibility Big 5” (chapter timestamps). */
+  mobility_prep: {
+    youtubeVideoId: 'I5mBCiDCwt0',
+    youtubeStartSec: 33,
+    watchUrl: 'https://www.youtube.com/watch?v=I5mBCiDCwt0&t=33s',
+    credit: 'Demo: The Bodyweight Warrior — warm-up (YouTube)',
+    tips: [
+      'Cat-cow and easy joint prep — no forcing range.',
+      'Arm circles forward and back, slow breath.',
+      'Stop if anything pinches; mobility is not a competition.',
+    ],
+  },
+  mobility_pike: {
+    youtubeVideoId: 'I5mBCiDCwt0',
+    youtubeStartSec: 82,
+    watchUrl: 'https://www.youtube.com/watch?v=I5mBCiDCwt0&t=82s',
+    credit: 'Demo: The Bodyweight Warrior — pike (YouTube)',
+    tips: [
+      'Hinge from hips; spine long — bend knees if hamstrings are tight.',
+      'Think “chest toward thighs,” not forehead to floor at all costs.',
+      'Hold steady pressure; no bouncing.',
+    ],
+  },
+  mobility_pancake: {
+    youtubeVideoId: 'I5mBCiDCwt0',
+    youtubeStartSec: 149,
+    watchUrl: 'https://www.youtube.com/watch?v=I5mBCiDCwt0&t=149s',
+    credit: 'Demo: The Bodyweight Warrior — pancake / straddle (YouTube)',
+    tips: [
+      'Sit tall first, then fold between legs or over one leg.',
+      'Butterfly or wide straddle is fine if full pancake is too much.',
+      'Keep knees pointing up — don’t collapse into a rounded slump.',
+    ],
+  },
+  mobility_front_split: {
+    youtubeVideoId: 'I5mBCiDCwt0',
+    youtubeStartSec: 221,
+    watchUrl: 'https://www.youtube.com/watch?v=I5mBCiDCwt0&t=221s',
+    credit: 'Demo: The Bodyweight Warrior — front split progression (YouTube)',
+    tips: [
+      'Half-kneeling lunge or blocks — hips square to the front.',
+      'Front knee over ankle; back leg long.',
+      'You are building the split, not proving you already have it.',
+    ],
+  },
+  mobility_side_split: {
+    youtubeVideoId: 'I5mBCiDCwt0',
+    youtubeStartSec: 364,
+    watchUrl: 'https://www.youtube.com/watch?v=I5mBCiDCwt0&t=364s',
+    credit: 'Demo: The Bodyweight Warrior — side / middle split (YouTube)',
+    tips: [
+      'Wide stance or seated straddle — lean with a flat back.',
+      'Support hands on floor or blocks as needed.',
+      'Ease into inner-thigh stretch; never tear into pain.',
+    ],
+  },
+  mobility_pigeon: {
+    youtubeVideoId: 'I5mBCiDCwt0',
+    youtubeStartSec: 422,
+    watchUrl: 'https://www.youtube.com/watch?v=I5mBCiDCwt0&t=422s',
+    credit: 'Demo: The Bodyweight Warrior — pigeon (YouTube)',
+    tips: [
+      'Figure-4 seated or floor pigeon — glute stretch, hips as square as you can.',
+      'Use a pillow under front hip if the floor version is too intense.',
+      'Switch sides evenly; same hold quality left and right.',
+    ],
+  },
 };
 
 export function resolveExerciseMedia(exerciseId: string, rungName?: string): ExerciseMedia {
@@ -275,6 +344,7 @@ export function resolveExerciseMedia(exerciseId: string, rungName?: string): Exe
   const rungPatch = rungName && entry.rungs?.[rungName];
   const base: ExerciseMedia = {
     youtubeVideoId: entry.youtubeVideoId,
+    youtubeStartSec: entry.youtubeStartSec,
     watchUrl: entry.watchUrl,
     tips: entry.tips,
     credit: entry.credit,

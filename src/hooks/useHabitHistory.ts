@@ -5,6 +5,7 @@ import { supabase, SUPABASE_ENABLED } from '@/lib/supabase';
 import {
   buildHabitTimeline,
   defaultTimelineRange,
+  sessionCountsAsTraining,
   sessionDateFromCreatedAt,
   type HabitDayRow,
   type HabitTimelineDay,
@@ -55,7 +56,7 @@ export function useHabitHistory(
           .lte('date', today),
         supabase
           .from('sessions')
-          .select('created_at')
+          .select('created_at, entries')
           .eq('user_id', userId)
           .gte('created_at', startIso),
       ]);
@@ -68,7 +69,9 @@ export function useHabitHistory(
       setHabitRows((habitsRes.data as HabitDayRow[]) ?? []);
       const trained = new Set<string>();
       for (const row of sessionsRes.data ?? []) {
-        if (row.created_at) trained.add(sessionDateFromCreatedAt(row.created_at as string));
+        if (!row.created_at) continue;
+        if (!sessionCountsAsTraining(row.entries)) continue;
+        trained.add(sessionDateFromCreatedAt(row.created_at as string));
       }
       setSessionDates(trained);
       setLoading(false);

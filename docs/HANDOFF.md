@@ -42,9 +42,11 @@ Aligns with **Gröda / DLKK** (Next on Vercel) while keeping Gymbros’s own Sup
 
 **Migration + habits MVP (code): done.** See [MIGRATION.md](./MIGRATION.md).
 
-**Manual follow-up:** apply [supabase/migrations/20260605_daily_habits.sql](../supabase/migrations/20260605_daily_habits.sql) on Supabase if not already applied (habit toggles need the table).
+**Supabase migrations (project `sokuvssuuightppxlqoi`):** base table [20260605_daily_habits.sql](../supabase/migrations/20260605_daily_habits.sql); habit columns in [20261006_habits_sick_water.sql](../supabase/migrations/20261006_habits_sick_water.sql), [20261006_habits_steps.sql](../supabase/migrations/20261006_habits_steps.sql), [20261006_habits_protein_g.sql](../supabase/migrations/20261006_habits_protein_g.sql), [20261006_habits_creatine.sql](../supabase/migrations/20261006_habits_creatine.sql), [20261006_habits_sleep.sql](../supabase/migrations/20261006_habits_sleep.sql), [20261006_habits_mobility.sql](../supabase/migrations/20261006_habits_mobility.sql), [20261006_profile_body_metrics.sql](../supabase/migrations/20261006_profile_body_metrics.sql). **Prod (2026-10-06):** all of the above applied on gymbros — re-run a file only if a column is missing in the dashboard.
 
-**Next product work (post-MVP):** turn off `MVP_MODE` in `src/lib/mvp.ts` when ready for locker/achievements; optional habit add-ons beyond sleep/steps/creatine per [MVP.md](./MVP.md).
+**Program map (Linus October plan in app):** [LINUS_PROGRAM.md](./LINUS_PROGRAM.md) — Main split, Skills, **Mobility** TRAIN, Conditioning 4×4, habits **7/7 · 8/8**.
+
+**Next product work (post-MVP):** turn off `MVP_MODE` in `src/lib/mvp.ts` when ready for locker/achievements; deferred items in [MVP.md](./MVP.md) / plan (tabata rope, in-workout mobility timers).
 
 ---
 
@@ -85,7 +87,10 @@ src/state/store.tsx       Auth, pair, sessions, habits, profile sync
 src/screens/*             Screen components
 src/lib/mvp.ts            MVP_MODE flag
 tools/cosmetic-gen/       Dev-only art pipeline — out of MVP scope
-supabase/migrations/      SQL (apply daily_habits on remote)
+supabase/migrations/      SQL — see list under Active build order
+src/content/mobility.ts   Mobility TRAIN copy + cooldown guide
+src/content/exercise-media.ts  YouTube demos (incl. mobility_* chapters)
+docs/LINUS_PROGRAM.md     How TRAIN options map to the paper plan
 docs/MVP.md               Product scope in/out
 docs/MIGRATION.md         Migration checklist
 ```

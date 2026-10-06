@@ -43,6 +43,16 @@ export function sessionDateFromCreatedAt(createdAt: string): string {
   return localDateISO(new Date(createdAt));
 }
 
+/** Strength/cardio sessions count toward “trained”; mobility-only logs do not. */
+export function sessionCountsAsTraining(entries: unknown): boolean {
+  if (!Array.isArray(entries) || entries.length === 0) return true;
+  return entries.some((e) => {
+    if (typeof e !== 'object' || !e || !('exerciseId' in e)) return false;
+    const id = String((e as { exerciseId: string }).exerciseId);
+    return id.length > 0 && !id.startsWith('mobility_');
+  });
+}
+
 export function buildHabitTimeline(input: {
   dates: string[];
   habitRows: HabitDayRow[];

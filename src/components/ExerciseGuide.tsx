@@ -15,6 +15,11 @@ export function ExerciseGuide({
   const [loadVideo, setLoadVideo] = useState(false);
 
   const videoId = media.youtubeVideoId;
+  const start = media.youtubeStartSec;
+  const embedQuery =
+    start != null && start > 0
+      ? `?rel=0&start=${start}`
+      : '?rel=0';
 
   return (
     <div className="exercise-guide">
@@ -22,7 +27,7 @@ export function ExerciseGuide({
         {videoId && loadVideo ? (
           <iframe
             title={`${rungName} demo`}
-            src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0`}
+            src={`https://www.youtube-nocookie.com/embed/${videoId}${embedQuery}`}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
             loading="lazy"
