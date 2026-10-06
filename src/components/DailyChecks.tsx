@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { ProteinLogPanel, ProteinLogSummary } from '@/components/ProteinLogPanel';
-import { proteinTargetG, WATER_TARGET_LABEL } from '@/content/diet';
+import { CREATINE_GUIDE, proteinTargetG, WATER_TARGET_LABEL } from '@/content/diet';
 import { habitScore } from '@/lib/habits-score';
 import { useApp } from '@/state/store';
 import type { HabitsToday, Profile } from '@/state/types';
@@ -24,6 +24,7 @@ const emptyHabits: HabitsToday = {
   protein_g: 0,
   water_met: false,
   steps_met: false,
+  creatine_met: false,
   sick: false,
 };
 
@@ -81,6 +82,7 @@ export function DailyChecks({ partnerProfile }: { partnerProfile?: Profile | nul
     toggleNoSugar,
     toggleWaterMet,
     toggleStepsMet,
+    toggleCreatineMet,
     toggleSickDay,
   } = useApp();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -156,6 +158,12 @@ export function DailyChecks({ partnerProfile }: { partnerProfile?: Profile | nul
         done={mine.steps_met}
         onToggle={() => void toggleStepsMet()}
       />
+      <CheckRow
+        label="Kreatin"
+        sub={CREATINE_GUIDE.targetLabel}
+        done={mine.creatine_met}
+        onToggle={() => void toggleCreatineMet()}
+      />
 
       {mine.sick ? (
         <CheckRow label="Training" sub="Rest day — excused" done readOnly />
@@ -175,6 +183,7 @@ export function DailyChecks({ partnerProfile }: { partnerProfile?: Profile | nul
           />
           <CheckRow label="Water" done={bro.habits.water_met} readOnly />
           <CheckRow label="Steps" done={bro.habits.steps_met} readOnly />
+          <CheckRow label="Kreatin" done={bro.habits.creatine_met} readOnly />
           {bro.habits.sick ? (
             <CheckRow label="Training" sub="Rest" done readOnly />
           ) : (

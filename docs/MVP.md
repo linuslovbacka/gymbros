@@ -13,7 +13,7 @@ Full agent context: [HANDOFF.md](./HANDOFF.md).
 | Check | Behavior |
 |--------|----------|
 | No sugar | Manual toggle: stayed sugar-free today |
-| Protein | Toggle: hit daily target (default **110 g**; +25 g in **maintenance mode**) |
+| Protein | Log grams on home; target from weight or **110 g** default (+25 g in **performance / bulk** on Diet) |
 | Water | Toggle: ~**1.5–2 L** for the day |
 | Training | Auto when workout logged — **excused** when **I’m sick today** is on |
 | Sick | Skips training for the day; diet + water habits still count (**3/3** max) |

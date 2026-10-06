@@ -14,7 +14,7 @@ import type { RealtimePostgresChangesPayload, Session, User } from '@supabase/su
 import { supabase, SUPABASE_ENABLED } from '../lib/supabase';
 import type { HabitsToday, Profile } from './types';
 import { WRITABLE_PROFILE_COLUMNS } from './types';
-import { proteinMetFromLogged, proteinTargetG } from '../content/diet';
+import { proteinBaseFromWeightKg, proteinMetFromLogged, proteinTargetG } from '../content/diet';
 import type { Direction, Mode } from '../content/types';
 import type { ProgramStage } from '../content/workouts';
 import { ironForSession, gritForSession } from '../engine/currency';
@@ -71,8 +71,10 @@ interface AppState {
   resetProteinLog: () => Promise<void>;
   toggleWaterMet: () => Promise<void>;
   toggleStepsMet: () => Promise<void>;
+  toggleCreatineMet: () => Promise<void>;
   toggleSickDay: () => Promise<void>;
   setMaintenanceMode: (on: boolean) => void;
+  updateBodyMetrics: (input: { body_weight_kg: number; body_height_cm: number }) => void;
   signInWithEmail: (email: string, password: string) => Promise<{ error?: string }>;
   signUpWithEmail: (email: string, password: string) => Promise<{ error?: string }>;
   resetPasswordForEmail: (email: string) => Promise<{ error?: string }>;
@@ -165,7 +167,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const date = todayISO();
     const { data, error } = await supabase
       .from('daily_habits')
-      .select('no_sugar, protein_met, protein_g, water_met, steps_met, sick')
+      .select('no_sugar, protein_met, protein_g, water_met, steps_met, creatine_met, sick')
       .eq('user_id', uid)
       .eq('date', date)
       .maybeSingle();
@@ -177,6 +179,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         protein_g: 0,
         water_met: false,
         steps_met: false,
+        creatine_met: false,
         sick: false,
       };
     }
@@ -186,6 +189,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       protein_g: data?.protein_g ?? 0,
       water_met: data?.water_met ?? false,
       steps_met: data?.steps_met ?? false,
+      creatine_met: data?.creatine_met ?? false,
       sick: data?.sick ?? false,
     };
   }, []);
@@ -200,6 +204,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       protein_g: patch.protein_g ?? habitsToday?.protein_g ?? 0,
       water_met: patch.water_met ?? habitsToday?.water_met ?? false,
       steps_met: patch.steps_met ?? habitsToday?.steps_met ?? false,
+      creatine_met: patch.creatine_met ?? habitsToday?.creatine_met ?? false,
       sick: patch.sick ?? habitsToday?.sick ?? false,
     };
     setHabitsToday(next);
@@ -243,6 +248,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await upsertHabits({ steps_met: !(habitsToday?.steps_met ?? false) });
   }, [habitsToday, upsertHabits]);
 
+  const toggleCreatineMet = useCallback(async () => {
+    await upsertHabits({ creatine_met: !(habitsToday?.creatine_met ?? false) });
+  }, [habitsToday, upsertHabits]);
+
   const toggleSickDay = useCallback(async () => {
     await upsertHabits({ sick: !(habitsToday?.sick ?? false) });
   }, [habitsToday, upsertHabits]);
@@ -250,6 +259,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const setMaintenanceMode = useCallback(
     (on: boolean) => {
       patchProfile({ maintenance_mode: on });
+    },
+    [patchProfile],
+  );
+
+  const updateBodyMetrics = useCallback(
+    (input: { body_weight_kg: number; body_height_cm: number }) => {
+      const w = Math.round(input.body_weight_kg * 10) / 10;
+      const h = Math.round(input.body_height_cm * 10) / 10;
+      patchProfile({
+        body_weight_kg: w,
+        body_height_cm: h,
+        protein_target_g: proteinBaseFromWeightKg(w),
+      });
     },
     [patchProfile],
   );
@@ -330,6 +352,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             protein_g?: number;
             water_met?: boolean;
             steps_met?: boolean;
+            creatine_met?: boolean;
             sick?: boolean;
           };
           if (!row?.user_id || row.user_id === user.id) return;
@@ -340,6 +363,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               protein_g: row.protein_g ?? 0,
               water_met: row.water_met ?? false,
               steps_met: row.steps_met ?? false,
+              creatine_met: row.creatine_met ?? false,
               sick: row.sick ?? false,
             });
           }
@@ -618,8 +642,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     resetProteinLog,
     toggleWaterMet,
     toggleStepsMet,
+    toggleCreatineMet,
     toggleSickDay,
     setMaintenanceMode,
+    updateBodyMetrics,
     signInWithEmail,
     signUpWithEmail,
     resetPasswordForEmail,
@@ -635,7 +661,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     buyCosmetic,
     equipCosmetic,
     unequipSlot,
-  }), [ready, user, profile, partner, lastSplitDirection, habitsToday, partnerHabitsToday, passwordRecovery, toggleNoSugar, toggleProteinMet, addProteinGrams, resetProteinLog, toggleWaterMet, toggleStepsMet, toggleSickDay, setMaintenanceMode, signInWithEmail, signUpWithEmail, resetPasswordForEmail, updatePassword, signOut, createPair, joinPair, pressProMode, completeSession, climbExercise, stepDownExercise, declineExercise, buyCosmetic, equipCosmetic, unequipSlot]);
+  }), [ready, user, profile, partner, lastSplitDirection, habitsToday, partnerHabitsToday, passwordRecovery, toggleNoSugar, toggleProteinMet, addProteinGrams, resetProteinLog, toggleWaterMet, toggleStepsMet, toggleCreatineMet, toggleSickDay, setMaintenanceMode, updateBodyMetrics, signInWithEmail, signUpWithEmail, resetPasswordForEmail, updatePassword, signOut, createPair, joinPair, pressProMode, completeSession, climbExercise, stepDownExercise, declineExercise, buyCosmetic, equipCosmetic, unequipSlot]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

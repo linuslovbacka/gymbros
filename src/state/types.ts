@@ -15,13 +15,14 @@ export interface DailyHabitsRow {
   protein_g: number;
   water_met: boolean;
   steps_met: boolean;
+  creatine_met: boolean;
   sick: boolean;
   updated_at?: string;
 }
 
 export type HabitsToday = Pick<
   DailyHabitsRow,
-  'no_sugar' | 'protein_met' | 'protein_g' | 'water_met' | 'steps_met' | 'sick'
+  'no_sugar' | 'protein_met' | 'protein_g' | 'water_met' | 'steps_met' | 'creatine_met' | 'sick'
 >;
 
 /** Mirrors the `profiles` row. JSONB columns are typed loosely for Phase 1. */
@@ -50,6 +51,8 @@ export interface Profile {
   days_trained: number;
   pr_count: number;
   protein_target_g?: number;
+  body_weight_kg?: number;
+  body_height_cm?: number;
   maintenance_mode?: boolean;
   created_at: string;
   updated_at: string;
@@ -78,5 +81,7 @@ export const WRITABLE_PROFILE_COLUMNS = [
   'pr_count',
   'display_name',
   'protein_target_g',
+  'body_weight_kg',
+  'body_height_cm',
   'maintenance_mode',
 ] as const;

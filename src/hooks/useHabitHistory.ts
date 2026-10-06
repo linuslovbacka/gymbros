@@ -49,7 +49,7 @@ export function useHabitHistory(
       const [habitsRes, sessionsRes] = await Promise.all([
         supabase
           .from('daily_habits')
-          .select('date, no_sugar, protein_met, water_met, steps_met, sick')
+          .select('date, no_sugar, protein_met, water_met, steps_met, creatine_met, sick')
           .eq('user_id', userId)
           .gte('date', rangeStart)
           .lte('date', today),
@@ -86,6 +86,7 @@ export function useHabitHistory(
       protein_g: 0,
       water_met: false,
       steps_met: false,
+      creatine_met: false,
       sick: false,
     };
     return buildHabitTimeline({

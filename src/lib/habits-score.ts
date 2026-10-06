@@ -6,8 +6,9 @@ export function habitScore(habits: HabitsToday, trainedToday: boolean): { done: 
     (habits.no_sugar ? 1 : 0) +
     (habits.protein_met ? 1 : 0) +
     (habits.water_met ? 1 : 0) +
-    (habits.steps_met ? 1 : 0);
-  if (habits.sick) return { done: diet, total: 4 };
+    (habits.steps_met ? 1 : 0) +
+    (habits.creatine_met ? 1 : 0);
+  if (habits.sick) return { done: diet, total: 5 };
   const training = trainedToday ? 1 : 0;
-  return { done: diet + training, total: 5 };
+  return { done: diet + training, total: 6 };
 }

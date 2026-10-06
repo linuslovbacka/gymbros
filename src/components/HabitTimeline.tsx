@@ -15,12 +15,14 @@ export function HabitTimeline({
   days,
   loading,
   compact,
+  hideLegend,
   title = 'Habit history',
 }: {
   days: HabitTimelineDay[];
   loading?: boolean;
   /** Shorter bar on home screen */
   compact?: boolean;
+  hideLegend?: boolean;
   title?: string;
 }) {
   const summary = useMemo(() => timelineSummary(days), [days]);
@@ -66,9 +68,11 @@ export function HabitTimeline({
         </div>
       </div>
 
-      <p className="habit-timeline-legend muted">
-        Each bar is one day (left = older). Height = daily score. Orange line = sick. Dark edge = today.
-      </p>
+      {!hideLegend && (
+        <p className="habit-timeline-legend muted">
+          Each bar is one day (left = older). Height = daily score. Orange line = sick. Dark edge = today.
+        </p>
+      )}
     </div>
   );
 }

@@ -39,10 +39,30 @@
 .start-mvp {
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+.start-mvp .habit-timeline-wrap {
+  flex-shrink: 0;
+  margin-top: 8px;
+  margin-bottom: 8px;
 }
 .start-mvp .daily-checks {
   flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.start-mvp-footer {
+  flex-shrink: 0;
+  margin-top: auto;
+}
+.start-mvp .sick-train-note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 /* ─── VS / start screen: Figma "LL PLAY" theme ─────────────────────────── */
@@ -618,7 +638,11 @@
 .schedule-block { margin-bottom: 16px; }
 
 /* ─── Diet reference screen ─────────────────────────────────────────────── */
-.diet-section { gap: 10px; }
+.diet-section {
+  gap: 10px;
+  min-width: 0;
+  max-width: 100%;
+}
 .diet-lead { font-size: 13px; margin: 0; line-height: 1.45; }
 .diet-list {
   list-style: none;
@@ -646,6 +670,16 @@
   font-size: 16px;
   letter-spacing: 0.04em;
 }
+.diet-creatine-list {
+  margin: 10px 0 0;
+  padding-left: 1.1rem;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.diet-creatine-list li + li {
+  margin-top: 6px;
+}
+
 .diet-card-detail {
   margin: 6px 0 0;
   font-size: 13px;
@@ -681,6 +715,186 @@
 }
 .diet-mode-btn { text-align: center; font-size: 13px; }
 
+.diet-protein-guide-btn {
+  text-align: center;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.diet-protein-sheet {
+  max-height: min(88vh, 640px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.diet-protein-sheet-head {
+  margin-bottom: 8px;
+}
+.diet-protein-fist-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+.diet-protein-fist-grams {
+  font-size: 14px;
+  margin: 8px 0 6px;
+  line-height: 1.4;
+}
+.diet-protein-alt-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.diet-protein-alt-row {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  background: var(--bg);
+}
+.diet-protein-alt-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.diet-protein-alt-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+.diet-protein-alt-g {
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-size: 13px;
+  color: var(--accent);
+}
+.diet-protein-alt-detail {
+  font-size: 12px;
+  line-height: 1.45;
+  margin: 0;
+}
+.diet-protein-palm-note {
+  margin: 0 0 14px;
+  line-height: 1.45;
+}
+
+.diet-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.diet-metrics-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  width: 100%;
+}
+.diet-metrics-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.diet-metrics-saved-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-3);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.diet-metrics-saved-text {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.diet-metrics-edit {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: underline;
+  padding: 4px 0;
+  cursor: pointer;
+}
+.diet-metrics-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+}
+.diet-metrics-save {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  font-size: 14px;
+  padding: 12px 16px;
+  white-space: normal;
+  line-height: 1.25;
+  text-align: center;
+}
+.diet-metrics-label {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.diet-metrics-input {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 10px 10px;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--bg-3);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--text);
+}
+.diet-metrics-card {
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-2);
+  box-shadow: var(--shadow-card);
+}
+.diet-metrics-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.diet-metrics-card-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.diet-metrics-card-value {
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.diet-metrics-card-sub {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .protein-calc {
   display: flex;
   flex-direction: column;
@@ -714,39 +928,76 @@
   border-radius: 3px;
   transition: width 0.2s ease;
 }
-.protein-calc-quick {
+.protein-log-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+.protein-log-actions--home {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
 }
 .protein-calc-chip {
-  flex: 1 1 calc(50% - 4px);
-  min-width: 72px;
-  padding: 10px 8px;
-  font-size: 14px;
-  font-weight: 500;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--bg);
-  color: var(--text);
-}
-.protein-calc-row {
-  display: flex;
-  gap: 10px;
-  align-items: stretch;
-}
-.protein-calc-input {
-  flex: 1;
+  flex: 0 0 auto;
   min-width: 0;
-  padding: 12px 14px;
-  font-size: 18px;
+  padding: 9px 10px;
+  font-size: 13px;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--bg);
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--bg-2);
+  box-shadow: inset 0 0 0 1px var(--line);
   color: var(--text);
 }
-.protein-calc-add-btn { flex-shrink: 0; padding-left: 18px; padding-right: 18px; }
+.protein-gram-input-wrap {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 10px 0 8px;
+  min-width: 4.25rem;
+  height: 36px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.protein-gram-input {
+  width: 2.5rem;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--text);
+  -moz-appearance: textfield;
+}
+.protein-gram-input::-webkit-outer-spin-button,
+.protein-gram-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.protein-gram-unit {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.protein-calc-add-btn {
+  flex: 0 0 auto;
+  padding: 9px 14px;
+  font-size: 13px;
+  margin-left: auto;
+}
+.protein-log-actions--home .protein-calc-add-btn {
+  margin-left: 0;
+}
 .protein-calc-reset {
   font-size: 12px;
   padding: 8px;
@@ -757,31 +1008,74 @@
 }
 
 .protein-log--home {
-  gap: 10px;
+  gap: 12px;
   padding: 12px 14px;
   margin: 0;
-  border: 1px solid var(--line);
+  border: none;
   border-radius: var(--radius-sm);
-  background: var(--surface-2, var(--surface));
+  background: var(--bg-3);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.protein-log--home.protein-log--done {
+  box-shadow: inset 0 0 0 2px var(--accent);
+  background: rgba(255, 77, 36, 0.1);
+}
+.protein-log--home.protein-log--done .protein-log-mark.done { color: var(--accent); }
+.protein-log--home .protein-calc-bar-fill { background: var(--accent); }
+.protein-log--home .protein-calc-bar {
+  margin-bottom: 4px;
+}
+.protein-log--home .protein-log-actions {
+  margin-top: 10px;
 }
 .protein-log--home .protein-calc-logged { font-size: 28px; }
-.protein-log--home .protein-calc-input { padding: 10px 12px; font-size: 16px; }
-.protein-log--home .protein-calc-add-btn { font-size: 13px; padding: 10px 14px; }
-.protein-log--home .protein-calc-chip { flex: 1 1 calc(25% - 6px); padding: 8px 4px; font-size: 13px; }
+.protein-log--home .protein-calc-chip {
+  padding: 8px 9px;
+  font-size: 12px;
+}
+.protein-log--home .protein-gram-input-wrap {
+  height: 34px;
+  padding: 0 8px 0 6px;
+}
+.protein-log--home .protein-gram-input {
+  font-size: 15px;
+}
+.protein-log--home .protein-calc-add-btn {
+  padding: 8px 12px;
+}
 .protein-log-head {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
-.protein-log-title { font-weight: 600; font-size: 15px; }
-.protein-log-mark {
-  width: 1.25rem;
-  text-align: center;
-  font-weight: 700;
+.protein-log-head-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.protein-log-title { font-weight: 600; font-size: 14px; }
+.protein-log-mark { flex-shrink: 0; }
+.protein-log-reset {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin: -6px -6px -6px 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
   color: var(--muted-2);
 }
-.protein-log-mark.done { color: var(--amber); }
+.protein-log-reset:active {
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.04);
+}
 .protein-log-caption { margin: 0; font-size: 12px; }
 .protein-log-readonly { margin: 0; }
 
@@ -868,6 +1162,14 @@
 }
 .habit-timeline-wrap.is-compact .habit-timeline-scroll {
   height: 36px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.habit-timeline-wrap.is-compact .habit-timeline {
+  height: 28px;
+}
+.habit-timeline-wrap.is-compact .habit-timeline-head {
+  margin-bottom: 6px;
 }
 .habit-timeline-head {
   display: flex;

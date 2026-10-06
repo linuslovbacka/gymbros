@@ -100,20 +100,25 @@ export function StartScreen({
           </div>
         </div>
 
+        <HabitTimeline
+          days={historyDays}
+          loading={historyLoading}
+          compact
+          hideLegend
+          title="Your progress"
+        />
+
         <DailyChecks partnerProfile={partner} />
 
-        <HabitTimeline days={historyDays} loading={historyLoading} compact title="Your progress" />
-
-        <div className="spacer" />
         {sickToday ? (
-          <p className="sick-train-note muted">
+          <p className="sick-train-note muted start-mvp-footer">
             Rest day — diet habits still count. Turn off &quot;I&apos;m sick&quot; when you&apos;re ready to train
             again.
           </p>
         ) : (
           <button
             type="button"
-            className="btn btn-primary btn-block btn-train-nothing"
+            className="btn btn-primary btn-block btn-train-nothing start-mvp-footer"
             onClick={onTrain}
             aria-label="Train"
           >

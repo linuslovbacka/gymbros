@@ -1,21 +1,26 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
+import { ProteinAlternativesSheet } from '@/components/ProteinAlternativesSheet';
 import { useApp } from '@/state/store';
 import {
+  CREATINE_GUIDE,
   DIET_RESTRICTIONS,
+  PERFORMANCE_BULK_PROTEIN,
   dietGoals,
   HAND_RULE_PORTIONS,
   proteinTargetG,
   SICK_DAY_TRAINING_NOTE,
 } from '@/content/diet';
-import { ProteinCalculator } from '@/components/ProteinCalculator';
+import { DietMetricsCalculator } from '@/components/DietMetricsCalculator';
 import { habitScore } from '@/lib/habits-score';
 
 const TODAY = () => new Date().toISOString().slice(0, 10);
 
 export function DietScreen() {
   const { profile, habitsToday, setMaintenanceMode } = useApp();
+  const [proteinGuideOpen, setProteinGuideOpen] = useState(false);
   if (!profile) return null;
 
   const proteinTarget = proteinTargetG(profile);
@@ -26,11 +31,12 @@ export function DietScreen() {
     protein_g: 0,
     water_met: false,
     steps_met: false,
+    creatine_met: false,
     sick: false,
   };
   const trained = profile.streak_last_date === TODAY();
   const { done, total } = habitScore(today, trained);
-  const maintenance = profile.maintenance_mode ?? false;
+  const performanceBulk = profile.maintenance_mode ?? false;
 
   return (
     <div className="screen">
@@ -50,17 +56,15 @@ export function DietScreen() {
       </section>
 
       <section className="stack diet-section">
-        <h2 className="section-title">Goal mode</h2>
+        <h2 className="section-title">{PERFORMANCE_BULK_PROTEIN.sectionTitle}</h2>
         <button
           type="button"
-          className={`btn btn-block diet-mode-btn${maintenance ? ' btn-primary' : ''}`}
-          onClick={() => setMaintenanceMode(!maintenance)}
+          className={`btn btn-block diet-mode-btn${performanceBulk ? ' btn-primary' : ''}`}
+          onClick={() => setMaintenanceMode(!performanceBulk)}
         >
-          {maintenance ? 'Maintenance / performance (+protein)' : 'Switch to maintenance (+protein target)'}
+          {performanceBulk ? PERFORMANCE_BULK_PROTEIN.toggleOn : PERFORMANCE_BULK_PROTEIN.toggleOff}
         </button>
-        <p className="tiny muted diet-lead">
-          Use maintenance if you are not trying to cut hard — bumps your protein target slightly.
-        </p>
+        <p className="tiny muted diet-lead">{PERFORMANCE_BULK_PROTEIN.hint}</p>
       </section>
 
       <section className="stack diet-section">
@@ -83,9 +87,36 @@ export function DietScreen() {
       </section>
 
       <section className="stack diet-section">
-        <h2 className="section-title">Protein</h2>
-        <p className="muted diet-lead">Same log as home — add grams until you hit your target.</p>
-        <ProteinCalculator profile={profile} />
+        <h2 className="section-title">Protein & BMI</h2>
+        <p className="muted diet-lead">
+          Set weight and height to calculate your daily protein target and BMI. Log food on home.
+        </p>
+        <button
+          type="button"
+          className="btn btn-block diet-protein-guide-btn"
+          onClick={() => setProteinGuideOpen(true)}
+        >
+          Protein alternatives & fist portions
+        </button>
+        <DietMetricsCalculator profile={profile} />
+      </section>
+
+      <ProteinAlternativesSheet open={proteinGuideOpen} onClose={() => setProteinGuideOpen(false)} />
+
+      <section className="stack diet-section">
+        <h2 className="section-title">{CREATINE_GUIDE.title}</h2>
+        <div className="diet-card">
+          <div className="diet-card-head">
+            <span className="diet-card-title">Daily dose</span>
+            <span className="diet-target">{CREATINE_GUIDE.targetLabel}</span>
+          </div>
+          <p className="diet-card-detail">{CREATINE_GUIDE.summary}</p>
+          <ul className="diet-creatine-list muted">
+            {CREATINE_GUIDE.bullets.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </div>
       </section>
 
       <section className="stack diet-section">
