@@ -19,10 +19,18 @@ import {
   strengthRoutine,
   type WorkoutRoutine,
 } from '../content/routines';
-import { nextSplitDay, SPLIT_DAY_LABEL, type WorkoutItem } from '../content/workouts';
+import {
+  BEGINNER_ONBOARDING,
+  SPLIT_DAY_LABEL,
+  splitDaySuggestion,
+  suggestedSplitDay,
+  type WorkoutItem,
+} from '../content/workouts';
+import { describeBeginnerWeek } from '../content/schedule';
 import type { Mode, SplitDay } from '../content/types';
 import type { LoggedEntry } from '../engine/types';
 import { SupersetLogPhase } from '@/components/SupersetLogPhase';
+import { SkipBeginnerSheet } from '@/components/SkipBeginnerSheet';
 import { canShowGluteRoutine } from '@/lib/personal-routines';
 import { useSupersetFlow } from '@/lib/workout-superset';
 
@@ -35,7 +43,7 @@ export interface SessionDraft {
   entries: LoggedEntry[];
 }
 
-type Phase = 'routine' | 'mode' | 'homekind' | 'warmup' | 'log';
+type Phase = 'routine' | 'mode' | 'beginnerBrief' | 'homekind' | 'warmup' | 'log';
 
 function parseInitialRoutine(raw: string | null | undefined, showGlutes: boolean): WorkoutRoutine | null {
   if (raw === 'main' || raw === 'skills' || raw === 'conditioning' || raw === 'mobility') return raw;
@@ -55,8 +63,7 @@ function goToLogOrWarmup(
     return;
   }
   if (routine === 'main' && mode === 'home' && profile.program_stage !== 'standard') {
-    setKind('full');
-    setPhase('warmup');
+    setPhase('beginnerBrief');
     return;
   }
   if (strengthRoutine(routine)) {
@@ -76,7 +83,7 @@ export function WorkoutScreen({
   /** From `/workout?routine=skills` */
   initialRoutineParam?: string | null;
 }) {
-  const { user, profile, lastSplitDay } = useApp();
+  const { user, profile, lastSplitDay, skipBeginnerProgram } = useApp();
   const showGlutes = canShowGluteRoutine(user?.id);
 
   const preset = parseInitialRoutine(initialRoutineParam, showGlutes);
@@ -89,9 +96,11 @@ export function WorkoutScreen({
   });
   const [mode, setMode] = useState<Mode>('home');
   const [kind, setKind] = useState<'full' | 'split'>('full');
+  const [chosenSplitDay, setChosenSplitDay] = useState<SplitDay | undefined>();
   const [includeJumpRope, setIncludeJumpRope] = useState(false);
+  const [skipSheetOpen, setSkipSheetOpen] = useState(false);
 
-  const splitDay = useMemo(() => nextSplitDay(lastSplitDay), [lastSplitDay]);
+  const sessionSplitDay = kind === 'split' ? chosenSplitDay : undefined;
 
   const items = useMemo<WorkoutItem[]>(() => {
     if (!profile || phase !== 'log') return [];
@@ -100,13 +109,13 @@ export function WorkoutScreen({
       stage: profile.program_stage,
       state: profile.exercise_state,
       kind,
-      splitDay,
+      splitDay: sessionSplitDay,
     });
     if (includeJumpRope && strengthRoutine(routine)) {
       return [buildJumpRopeWarmupItem(profile.exercise_state), ...base];
     }
     return base;
-  }, [profile, phase, routine, mode, kind, splitDay, includeJumpRope]);
+  }, [profile, phase, routine, mode, kind, sessionSplitDay, includeJumpRope]);
 
   if (!profile) return null;
 
@@ -154,8 +163,7 @@ export function WorkoutScreen({
             onClick={() => {
               setMode('home');
               if (routine === 'main' && profile.program_stage !== 'standard') {
-                setKind('full');
-                setPhase('warmup');
+                setPhase('beginnerBrief');
               } else if (routine === 'main') {
                 setPhase('homekind');
               } else {
@@ -181,47 +189,114 @@ export function WorkoutScreen({
     );
   }
 
-  if (phase === 'homekind') {
-    const isBeginner = profile.program_stage !== 'standard';
+  if (phase === 'beginnerBrief') {
+    const stage = profile.program_stage;
+    if (stage === 'standard') return null;
+    const weekItems = describeBeginnerWeek(stage);
     return (
       <div className="screen">
-        <Topbar onBack={() => setPhase('mode')} title="How much today?" />
+        <Topbar onBack={() => setPhase('mode')} title={BEGINNER_ONBOARDING.title} />
+        <p className="muted">{BEGINNER_ONBOARDING.bullets[0]}</p>
+        <p className="muted tiny">{BEGINNER_ONBOARDING.bullets[1]}</p>
+        <h3 className="section-title">
+          Today · {stage.toUpperCase()}
+          <span className="chip"> Beginner ramp</span>
+        </h3>
+        <ul className="schedule-list">
+          {weekItems.map((it) => (
+            <li key={it.exerciseId}>
+              <strong>{it.name}</strong> — {it.prescription}
+            </li>
+          ))}
+        </ul>
         <div className="choice">
           <ChoiceBtn
-            label="Full workout"
-            sub={isBeginner ? `Beginner program · ${profile.program_stage.toUpperCase()}` : 'Every direction, ~20 min'}
+            label="Start workout"
+            sub={`Fixed home Main · ${stage.toUpperCase()}`}
             onClick={() => {
               setKind('full');
               setPhase('warmup');
             }}
           />
-          {!isBeginner && (
+          <ChoiceBtn
+            label={BEGINNER_ONBOARDING.skipLabel}
+            sub="Jump to upper/lower at home"
+            onClick={() => setSkipSheetOpen(true)}
+          />
+        </div>
+        <SkipBeginnerSheet
+          open={skipSheetOpen}
+          onClose={() => setSkipSheetOpen(false)}
+          onConfirm={() => {
+            skipBeginnerProgram();
+            setPhase('homekind');
+          }}
+        />
+      </div>
+    );
+  }
+
+  if (phase === 'homekind') {
+    const suggested = suggestedSplitDay(lastSplitDay);
+    const splitSub = (day: SplitDay) => {
+      const hint = day === 'upper' ? 'Push · pull · core' : 'Legs · glutes · hang';
+      if (lastSplitDay && day === suggested) return `${hint} (suggested)`;
+      return hint;
+    };
+    return (
+      <div className="screen">
+        <Topbar onBack={() => setPhase('mode')} title="How much today?" />
+        <p className="muted tiny">{splitDaySuggestion(lastSplitDay)}</p>
+        <div className="choice">
+          {mode === 'gym' && (
             <ChoiceBtn
-              label="Split"
-              sub={`Next up: ${SPLIT_DAY_LABEL[splitDay]}`}
+              label="Full workout"
+              sub="Every direction, ~20 min"
               onClick={() => {
-                setKind('split');
+                setKind('full');
+                setChosenSplitDay(undefined);
                 setPhase('warmup');
               }}
             />
           )}
+          <ChoiceBtn
+            label={SPLIT_DAY_LABEL.upper}
+            sub={splitSub('upper')}
+            onClick={() => {
+              setKind('split');
+              setChosenSplitDay('upper');
+              setPhase('warmup');
+            }}
+          />
+          <ChoiceBtn
+            label={SPLIT_DAY_LABEL.lower}
+            sub={splitSub('lower')}
+            onClick={() => {
+              setKind('split');
+              setChosenSplitDay('lower');
+              setPhase('warmup');
+            }}
+          />
         </div>
       </div>
     );
   }
 
   if (phase === 'warmup') {
+    const beginnerStage = profile.program_stage !== 'standard' ? profile.program_stage.toUpperCase() : null;
     return (
       <div className="screen">
         <Topbar
           onBack={() => {
             if (routine === 'main' && profile.program_stage === 'standard') {
               setPhase('homekind');
+            } else if (routine === 'main' && mode === 'home' && profile.program_stage !== 'standard') {
+              setPhase('beginnerBrief');
             } else {
               setPhase('mode');
             }
           }}
-          title="Warmup"
+          title={beginnerStage ? `Warmup · Beginner ${beginnerStage}` : 'Warmup'}
         />
         <p className="warmup-intro muted">{JUMP_ROPE_WARMUP_GUIDE}</p>
         <div className="choice">
@@ -253,10 +328,12 @@ export function WorkoutScreen({
     }
     if (strengthRoutine(routine)) setPhase('warmup');
     else if (routine === 'main' && profile.program_stage === 'standard') setPhase('homekind');
+    else if (routine === 'main' && mode === 'home' && profile.program_stage !== 'standard') setPhase('beginnerBrief');
     else setPhase('mode');
   };
 
   const superset = useSupersetFlow({ mode, routine });
+  const logSplitDay = sessionSplitDay ?? 'upper';
 
   if (superset) {
     return (
@@ -265,7 +342,7 @@ export function WorkoutScreen({
         routine={routine}
         mode={mode}
         kind={kind}
-        splitDay={splitDay}
+        splitDay={logSplitDay}
         onBack={logBack}
         onFinish={onFinish}
       />
@@ -278,7 +355,7 @@ export function WorkoutScreen({
       routine={routine}
       mode={mode}
       kind={kind}
-      splitDay={splitDay}
+      splitDay={logSplitDay}
       onBack={logBack}
       onFinish={onFinish}
     />

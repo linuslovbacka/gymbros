@@ -30,14 +30,14 @@ Show progress **7/7** (sick) or **8/8** (well). Partner’s checks under **Bro t
 
 ### Schedule (`/schedule` after Next migration)
 
-- Beginner **W1 → W2 → W3** lists from `BEGINNER_PROGRAM`
-- Standard **split** days: **Upper body** / **Lower body** (alternates each split session)
-- **Full** home and gym session lists from `buildWorkout()`
-- **Today preview** must match what **TRAIN** loads
+- Beginner **W1 → W2 → W3** (home Main only) — signposted on Schedule; **skippable** to standard
+- Standard **home:** upper or lower only (no full home). **Gym:** full, upper, or lower — user picks each session
+- Optional **split suggestion** from last logged split (copy only; does not assign the workout)
+- **Today preview** must match what **TRAIN** loads for the same mode + choice
 
 ### Workout loop
 
-- Keep Home/Gym, Full/Split, exercise logging, feel + progress on done
+- Home/Gym, session choice (above), exercise logging, feel + progress on done
 - **Extra routines:** **Skills**, **Mobility** (timed stretch session), **Conditioning (4×4)**, and **Glute day** (home + gym lists; Glute entry only when `NEXT_PUBLIC_PERSONAL_GLUTES_USER_ID` matches your auth user id)
 - **Quiet done screen** in MVP — no achievement/currency theatre
 

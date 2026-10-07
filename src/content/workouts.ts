@@ -31,10 +31,25 @@ export const SPLIT_DAY_LABEL: Record<SplitDay, string> = {
   lower: 'Lower body',
 };
 
+/** Copy for Schedule / TRAIN — suggestion only, not assignment. */
+export const BEGINNER_ONBOARDING = {
+  title: 'Beginner ramp (home only)',
+  bullets: [
+    'Three preset home Main workouts (W1 → W2 → W3) on easier rungs — pull, push, row, core, and hang each week.',
+    'Each completed home Main session moves you one step; after W3 you unlock upper/lower at home and full/upper/lower at gym.',
+    'Gym Main is separate — you can train there anytime; the ramp only shapes home Main.',
+  ],
+  skipLabel: 'Skip to upper/lower program',
+  skipConfirmTitle: 'Skip the beginner ramp?',
+  skipConfirmBody:
+    'You’ll jump straight to choosing upper or lower at home (and full/upper/lower at gym). Your exercise progress stays as-is.',
+  unlockNote: 'Upper/lower split lists unlock after the ramp or if you skip.',
+} as const;
+
 /** Exercises per split day (standard program only). */
 export const SPLIT_WORKOUT: Record<Mode, Record<SplitDay, string[]>> = {
   home: {
-    upper: ['pullup', 'pike_pushup', 'dip', 'inverted_row', 'pushup', 'hollow'],
+    upper: ['pullup', 'pike_pushup', 'inverted_row', 'pushup', 'front_lever', 'dip', 'hollow'],
     lower: ['pistol', 'glute_bridge', 'nordic', 'hanging'],
   },
   gym: {
@@ -225,10 +240,20 @@ export function normalizeSplitDay(last?: string | null): SplitDay | undefined {
   return undefined;
 }
 
-/** Next split alternates upper ↔ lower. */
+/** Alternating follow-up — for suggestion copy only, not workout assignment. */
 export function nextSplitDay(last?: SplitDay): SplitDay {
   if (!last) return 'upper';
   return last === 'upper' ? 'lower' : 'upper';
+}
+
+export function suggestedSplitDay(last?: SplitDay): SplitDay {
+  return nextSplitDay(last);
+}
+
+export function splitDaySuggestion(last?: SplitDay): string {
+  if (!last) return 'Pick upper or lower — we’ll remember what you log.';
+  const suggested = suggestedSplitDay(last);
+  return `If you’re alternating, ${SPLIT_DAY_LABEL[suggested].toLowerCase()} is a common follow-up to your last split.`;
 }
 
 /** @deprecated Use nextSplitDay — kept for imports during transition. */

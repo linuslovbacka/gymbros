@@ -8,7 +8,7 @@ export type WorkoutRoutine = 'main' | 'skills' | 'glutes' | 'conditioning' | 'mo
 export const ROUTINE_LABELS: Record<WorkoutRoutine, { title: string; sub: string }> = {
   main: {
     title: 'Main program',
-    sub: 'Full or split — shared Gymbros progression',
+    sub: 'Home: upper or lower · Gym: full, upper, or lower',
   },
   skills: {
     title: 'Skills',

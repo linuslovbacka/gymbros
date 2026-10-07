@@ -77,6 +77,7 @@ interface AppState {
   toggleMobilityMet: () => Promise<void>;
   toggleSickDay: () => Promise<void>;
   setMaintenanceMode: (on: boolean) => void;
+  skipBeginnerProgram: () => void;
   updateBodyMetrics: (input: { body_weight_kg: number; body_height_cm: number }) => void;
   signInWithEmail: (email: string, password: string) => Promise<{ error?: string }>;
   signUpWithEmail: (email: string, password: string) => Promise<{ error?: string }>;
@@ -280,6 +281,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [patchProfile],
   );
 
+  const skipBeginnerProgram = useCallback(() => {
+    const p = profileRef.current;
+    if (!p || p.program_stage === 'standard') return;
+    patchProfile({ program_stage: 'standard' });
+  }, [patchProfile]);
+
   const updateBodyMetrics = useCallback(
     (input: { body_weight_kg: number; body_height_cm: number }) => {
       const w = Math.round(input.body_weight_kg * 10) / 10;
@@ -472,8 +479,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const prCount = p.pr_count + prs.length;
 
     let programStage = p.program_stage;
-    if (!isMobility && input.mode === 'home' && programStage !== 'standard') {
-      programStage = STAGE_AFTER[programStage];
+    if (
+      !isMobility &&
+      input.routine === 'main' &&
+      input.mode === 'home' &&
+      programStage !== 'standard'
+    ) {
+      programStage = STAGE_AFTER[programStage as Exclude<ProgramStage, 'standard'>];
     }
 
     const today = todayISO();
@@ -691,6 +703,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toggleMobilityMet,
     toggleSickDay,
     setMaintenanceMode,
+    skipBeginnerProgram,
     updateBodyMetrics,
     signInWithEmail,
     signUpWithEmail,
@@ -707,7 +720,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     buyCosmetic,
     equipCosmetic,
     unequipSlot,
-  }), [ready, user, profile, partner, lastSplitDay, habitsToday, partnerHabitsToday, passwordRecovery, toggleNoSugar, toggleProteinMet, addProteinGrams, resetProteinLog, toggleWaterMet, toggleStepsMet, toggleSleepMet, toggleCreatineMet, toggleMobilityMet, toggleSickDay, setMaintenanceMode, updateBodyMetrics, signInWithEmail, signUpWithEmail, resetPasswordForEmail, updatePassword, signOut, createPair, joinPair, pressProMode, completeSession, climbExercise, stepDownExercise, declineExercise, buyCosmetic, equipCosmetic, unequipSlot]);
+  }), [ready, user, profile, partner, lastSplitDay, habitsToday, partnerHabitsToday, passwordRecovery, toggleNoSugar, toggleProteinMet, addProteinGrams, resetProteinLog, toggleWaterMet, toggleStepsMet, toggleSleepMet, toggleCreatineMet, toggleMobilityMet, toggleSickDay, setMaintenanceMode, skipBeginnerProgram, updateBodyMetrics, signInWithEmail, signUpWithEmail, resetPasswordForEmail, updatePassword, signOut, createPair, joinPair, pressProMode, completeSession, climbExercise, stepDownExercise, declineExercise, buyCosmetic, equipCosmetic, unequipSlot]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
