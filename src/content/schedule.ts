@@ -1,11 +1,12 @@
 import { getExercise } from './exercises';
 import type { Mode, SplitDay } from './types';
 import {
-  BEGINNER_PROGRAM,
+  beginnerProgramFor,
   buildWorkout,
   SPLIT_DAY_LABEL,
   SPLIT_DAY_ORDER,
   SPLIT_WORKOUT,
+  type BeginnerStage,
   type BuildOptions,
   type ExerciseState,
   type ProgramStage,
@@ -32,8 +33,8 @@ export function todayPreview(opts: TodayPreviewOptions): WorkoutItem[] {
   });
 }
 
-export function describeBeginnerWeek(stage: 'w1' | 'w2' | 'w3') {
-  return BEGINNER_PROGRAM[stage].map((it) => ({
+export function describeBeginnerWeek(stage: BeginnerStage, mode: Mode = 'home') {
+  return beginnerProgramFor(mode, stage).map((it) => ({
     ...it,
     name: getExercise(it.exerciseId).name,
   }));

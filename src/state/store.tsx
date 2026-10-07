@@ -479,12 +479,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const prCount = p.pr_count + prs.length;
 
     let programStage = p.program_stage;
-    if (
-      !isMobility &&
-      input.routine === 'main' &&
-      input.mode === 'home' &&
-      programStage !== 'standard'
-    ) {
+    if (!isMobility && input.routine === 'main' && programStage !== 'standard') {
       programStage = STAGE_AFTER[programStage as Exclude<ProgramStage, 'standard'>];
     }
 

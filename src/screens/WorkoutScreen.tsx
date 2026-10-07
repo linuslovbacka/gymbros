@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useApp } from '../state/store';
 import {
   ceilingPromptCopy,
@@ -62,7 +62,7 @@ function goToLogOrWarmup(
     setPhase('log');
     return;
   }
-  if (routine === 'main' && mode === 'home' && profile.program_stage !== 'standard') {
+  if (routine === 'main' && profile.program_stage !== 'standard') {
     setPhase('beginnerBrief');
     return;
   }
@@ -116,6 +116,12 @@ export function WorkoutScreen({
     }
     return base;
   }, [profile, phase, routine, mode, kind, sessionSplitDay, includeJumpRope]);
+
+  useEffect(() => {
+    if (phase === 'beginnerBrief' && profile?.program_stage === 'standard') {
+      setPhase('homekind');
+    }
+  }, [phase, profile?.program_stage]);
 
   if (!profile) return null;
 
@@ -176,7 +182,9 @@ export function WorkoutScreen({
             sub="Weights and machines"
             onClick={() => {
               setMode('gym');
-              if (routine === 'main' && profile.program_stage === 'standard') {
+              if (routine === 'main' && profile.program_stage !== 'standard') {
+                setPhase('beginnerBrief');
+              } else if (routine === 'main') {
                 setPhase('homekind');
               } else {
                 setKind('full');
@@ -192,14 +200,19 @@ export function WorkoutScreen({
   if (phase === 'beginnerBrief') {
     const stage = profile.program_stage;
     if (stage === 'standard') return null;
-    const weekItems = describeBeginnerWeek(stage);
+    const weekItems = describeBeginnerWeek(stage, mode);
+    const modeLabel = mode === 'home' ? 'Home' : 'Gym';
     return (
       <div className="screen">
         <Topbar onBack={() => setPhase('mode')} title={BEGINNER_ONBOARDING.title} />
-        <p className="muted">{BEGINNER_ONBOARDING.bullets[0]}</p>
-        <p className="muted tiny">{BEGINNER_ONBOARDING.bullets[1]}</p>
+        {BEGINNER_ONBOARDING.bullets.map((line) => (
+          <p key={line} className="muted">
+            {line}
+          </p>
+        ))}
+        <p className="muted tiny">{BEGINNER_ONBOARDING.advanceDetail}</p>
         <h3 className="section-title">
-          Today · {stage.toUpperCase()}
+          Today · {stage.toUpperCase()} · {modeLabel}
           <span className="chip"> Beginner ramp</span>
         </h3>
         <ul className="schedule-list">
@@ -212,7 +225,7 @@ export function WorkoutScreen({
         <div className="choice">
           <ChoiceBtn
             label="Start workout"
-            sub={`Fixed home Main · ${stage.toUpperCase()}`}
+            sub={`${modeLabel} Main · week ${stage.slice(1).toUpperCase()}`}
             onClick={() => {
               setKind('full');
               setPhase('warmup');
@@ -220,7 +233,7 @@ export function WorkoutScreen({
           />
           <ChoiceBtn
             label={BEGINNER_ONBOARDING.skipLabel}
-            sub="Jump to upper/lower at home"
+            sub="Same week counter — unlocks split/full choices"
             onClick={() => setSkipSheetOpen(true)}
           />
         </div>
@@ -290,13 +303,13 @@ export function WorkoutScreen({
           onBack={() => {
             if (routine === 'main' && profile.program_stage === 'standard') {
               setPhase('homekind');
-            } else if (routine === 'main' && mode === 'home' && profile.program_stage !== 'standard') {
+            } else if (routine === 'main' && profile.program_stage !== 'standard') {
               setPhase('beginnerBrief');
             } else {
               setPhase('mode');
             }
           }}
-          title={beginnerStage ? `Warmup · Beginner ${beginnerStage}` : 'Warmup'}
+          title={beginnerStage ? `Warmup · ${mode === 'home' ? 'Home' : 'Gym'} · ${beginnerStage}` : 'Warmup'}
         />
         <p className="warmup-intro muted">{JUMP_ROPE_WARMUP_GUIDE}</p>
         <div className="choice">
@@ -328,7 +341,7 @@ export function WorkoutScreen({
     }
     if (strengthRoutine(routine)) setPhase('warmup');
     else if (routine === 'main' && profile.program_stage === 'standard') setPhase('homekind');
-    else if (routine === 'main' && mode === 'home' && profile.program_stage !== 'standard') setPhase('beginnerBrief');
+    else if (routine === 'main' && profile.program_stage !== 'standard') setPhase('beginnerBrief');
     else setPhase('mode');
   };
 

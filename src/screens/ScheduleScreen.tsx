@@ -44,9 +44,9 @@ export function ScheduleScreen() {
   const preview = useMemo(() => {
     if (!profile) return [];
     const isBeginner = profile.program_stage !== 'standard';
-    if (isBeginner && previewMode === 'home') {
+    if (isBeginner) {
       return todayPreview({
-        mode: 'home',
+        mode: previewMode,
         kind: 'full',
         stage: profile.program_stage,
         state: profile.exercise_state,
@@ -99,35 +99,6 @@ export function ScheduleScreen() {
       </section>
 
       <section className="stack">
-        <h2 className="section-title">{SICK_TRAINING_GUIDE.title}</h2>
-        <p className="muted tiny">{SICK_TRAINING_GUIDE.disclaimer}</p>
-        <p className="muted">
-          <strong>{SICK_TRAINING_GUIDE.skipTitle}</strong>
-        </p>
-        <ul className="schedule-list muted">
-          {SICK_TRAINING_GUIDE.skip.map((line) => (
-            <li key={line}>{line}</li>
-          ))}
-        </ul>
-        <p className="muted">
-          <strong>{SICK_TRAINING_GUIDE.easyTitle}</strong>
-        </p>
-        <ul className="schedule-list muted">
-          {SICK_TRAINING_GUIDE.easy.map((line) => (
-            <li key={line}>{line}</li>
-          ))}
-        </ul>
-        <p className="muted">
-          <strong>{SICK_TRAINING_GUIDE.comebackTitle}</strong>
-        </p>
-        <ul className="schedule-list muted">
-          {SICK_TRAINING_GUIDE.comeback.map((line) => (
-            <li key={line}>{line}</li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="stack">
         <HabitTimeline days={historyDays} loading={historyLoading} title="Last 12 weeks" />
       </section>
 
@@ -154,7 +125,7 @@ export function ScheduleScreen() {
           >
             Gym
           </button>
-          {isBeginner && previewMode === 'home' ? (
+          {isBeginner ? (
             <span className="chip">Beginner {stage.toUpperCase()}</span>
           ) : previewMode === 'home' ? (
             <>
@@ -220,29 +191,39 @@ export function ScheduleScreen() {
               {line}
             </p>
           ))}
+          <p className="muted tiny">{BEGINNER_ONBOARDING.advanceDetail}</p>
           <p className="muted tiny">{BEGINNER_ONBOARDING.unlockNote}</p>
           <button type="button" className="btn" onClick={() => setSkipSheetOpen(true)}>
             {BEGINNER_ONBOARDING.skipLabel}
           </button>
-          {previewMode === 'home' && (
-            <>
-              {(['w1', 'w2', 'w3'] as const).map((week) => (
-                <div key={week} className="schedule-block">
-                  <h3>
-                    Week {week.slice(1).toUpperCase()}
-                    {stage === week && <span className="chip"> You are here</span>}
-                  </h3>
-                  <ul className="schedule-list">
-                    {describeBeginnerWeek(week).map((it) => (
-                      <li key={it.exerciseId}>
-                        <strong>{it.name}</strong> — {it.prescription}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </>
-          )}
+          {(['w1', 'w2', 'w3'] as const).map((week) => (
+            <div key={week} className="schedule-block">
+              <h3>
+                Week {week.slice(1).toUpperCase()}
+                {stage === week && <span className="chip"> You are here</span>}
+              </h3>
+              <p className="muted">
+                <strong>Home</strong>
+              </p>
+              <ul className="schedule-list">
+                {describeBeginnerWeek(week, 'home').map((it) => (
+                  <li key={`home-${it.exerciseId}`}>
+                    <strong>{it.name}</strong> — {it.prescription}
+                  </li>
+                ))}
+              </ul>
+              <p className="muted">
+                <strong>Gym</strong>
+              </p>
+              <ul className="schedule-list">
+                {describeBeginnerWeek(week, 'gym').map((it) => (
+                  <li key={`gym-${it.exerciseId}`}>
+                    <strong>{it.name}</strong> — {it.prescription}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </section>
       )}
 
@@ -261,6 +242,35 @@ export function ScheduleScreen() {
           })}
         </section>
       )}
+
+      <section className="stack">
+        <h2 className="section-title">{SICK_TRAINING_GUIDE.title}</h2>
+        <p className="muted tiny">{SICK_TRAINING_GUIDE.disclaimer}</p>
+        <p className="muted">
+          <strong>{SICK_TRAINING_GUIDE.skipTitle}</strong>
+        </p>
+        <ul className="schedule-list muted">
+          {SICK_TRAINING_GUIDE.skip.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+        <p className="muted">
+          <strong>{SICK_TRAINING_GUIDE.easyTitle}</strong>
+        </p>
+        <ul className="schedule-list muted">
+          {SICK_TRAINING_GUIDE.easy.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+        <p className="muted">
+          <strong>{SICK_TRAINING_GUIDE.comebackTitle}</strong>
+        </p>
+        <ul className="schedule-list muted">
+          {SICK_TRAINING_GUIDE.comeback.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+      </section>
 
       <SkipBeginnerSheet
         open={skipSheetOpen}

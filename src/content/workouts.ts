@@ -33,17 +33,19 @@ export const SPLIT_DAY_LABEL: Record<SplitDay, string> = {
 
 /** Copy for Schedule / TRAIN — suggestion only, not assignment. */
 export const BEGINNER_ONBOARDING = {
-  title: 'Beginner ramp (home only)',
+  title: 'Beginner ramp (W1 → W3)',
   bullets: [
-    'Three preset home Main workouts (W1 → W2 → W3) on easier rungs — pull, push, row, core, and hang each week.',
-    'Each completed home Main session moves you one step; after W3 you unlock upper/lower at home and full/upper/lower at gym.',
-    'Gym Main is separate — you can train there anytime; the ramp only shapes home Main.',
+    'Same three weeks for home and gym Main — each week has a fixed exercise list tuned to that location (easier rungs / starter weights).',
+    'One completed Main workout advances the week — home or gym counts, not both required. Skills, mobility, and cardio do not advance the ramp.',
+    'After W3 you unlock the full program: home upper/lower only; gym full, upper, or lower each session.',
   ],
-  skipLabel: 'Skip to upper/lower program',
+  advanceDetail:
+    'You stay on W1 until you finish one home or gym Main session, then W2, then W3, then standard. Logging the wrong location still uses that week’s list for where you train.',
+  skipLabel: 'Skip to full program',
   skipConfirmTitle: 'Skip the beginner ramp?',
   skipConfirmBody:
-    'You’ll jump straight to choosing upper or lower at home (and full/upper/lower at gym). Your exercise progress stays as-is.',
-  unlockNote: 'Upper/lower split lists unlock after the ramp or if you skip.',
+    'You’ll jump straight to choosing upper or lower at home (and full/upper/lower at gym). Your exercise progress stays as-is; only the ramp week counter is skipped.',
+  unlockNote: 'Split-day reference lists unlock after W3 or if you skip.',
 } as const;
 
 /** Exercises per split day (standard program only). */
@@ -70,10 +72,14 @@ export interface BeginnerItem {
   low: number;
   high: number;
   timed?: boolean;
+  /** Gym lifts — pinned working weight for this ramp week. */
+  weightKg?: number;
   prescription: string;
 }
 
-export const BEGINNER_PROGRAM: Record<'w1' | 'w2' | 'w3', BeginnerItem[]> = {
+export type BeginnerStage = 'w1' | 'w2' | 'w3';
+
+export const BEGINNER_PROGRAM: Record<BeginnerStage, BeginnerItem[]> = {
   w1: [
     { exerciseId: 'pullup', rungIndex: 2, sets: 3, low: 3, high: 6, prescription: '3 x 3-6' },
     { exerciseId: 'dip', rungIndex: 1, sets: 3, low: 3, high: 6, prescription: '3 x 3-6' },
@@ -99,6 +105,140 @@ export const BEGINNER_PROGRAM: Record<'w1' | 'w2' | 'w3', BeginnerItem[]> = {
     { exerciseId: 'hanging', rungIndex: 1, sets: 3, low: 30, high: 60, timed: true, prescription: '3 x 30-60 s' },
   ],
 };
+
+/** Gym Main beginner block — same W1→W3 counter as home. */
+export const BEGINNER_PROGRAM_GYM: Record<BeginnerStage, BeginnerItem[]> = {
+  w1: [
+    {
+      exerciseId: 'lat_pulldown',
+      rungIndex: 0,
+      sets: 3,
+      low: 8,
+      high: 12,
+      weightKg: 25,
+      prescription: '3 x 8-12 @ 25 kg',
+    },
+    {
+      exerciseId: 'bench_press',
+      rungIndex: 0,
+      sets: 3,
+      low: 8,
+      high: 12,
+      weightKg: 20,
+      prescription: '3 x 8-12 @ 20 kg',
+    },
+    {
+      exerciseId: 'cable_row',
+      rungIndex: 0,
+      sets: 3,
+      low: 8,
+      high: 12,
+      weightKg: 25,
+      prescription: '3 x 8-12 @ 25 kg',
+    },
+    {
+      exerciseId: 'deadlift',
+      rungIndex: 0,
+      sets: 3,
+      low: 5,
+      high: 8,
+      weightKg: 35,
+      prescription: '3 x 5-8 @ 35 kg',
+    },
+    { exerciseId: 'hollow', rungIndex: 2, sets: 3, low: 30, high: 30, timed: true, prescription: '3 x 30 s' },
+  ],
+  w2: [
+    {
+      exerciseId: 'lat_pulldown',
+      rungIndex: 0,
+      sets: 3,
+      low: 6,
+      high: 10,
+      weightKg: 30,
+      prescription: '3 x 6-10 @ 30 kg',
+    },
+    {
+      exerciseId: 'shoulder_press',
+      rungIndex: 0,
+      sets: 3,
+      low: 8,
+      high: 12,
+      weightKg: 20,
+      prescription: '3 x 8-12 @ 20 kg',
+    },
+    {
+      exerciseId: 'cable_row',
+      rungIndex: 0,
+      sets: 3,
+      low: 8,
+      high: 12,
+      weightKg: 30,
+      prescription: '3 x 8-12 @ 30 kg',
+    },
+    {
+      exerciseId: 'bench_press',
+      rungIndex: 0,
+      sets: 3,
+      low: 6,
+      high: 10,
+      weightKg: 25,
+      prescription: '3 x 6-10 @ 25 kg',
+    },
+    { exerciseId: 'hollow', rungIndex: 2, sets: 3, low: 30, high: 30, timed: true, prescription: '3 x 30 s' },
+  ],
+  w3: [
+    {
+      exerciseId: 'lat_pulldown',
+      rungIndex: 0,
+      sets: 3,
+      low: 8,
+      high: 12,
+      weightKg: 32.5,
+      prescription: '3 x 8-12 @ 32.5 kg',
+    },
+    {
+      exerciseId: 'bench_press',
+      rungIndex: 0,
+      sets: 3,
+      low: 6,
+      high: 10,
+      weightKg: 30,
+      prescription: '3 x 6-10 @ 30 kg',
+    },
+    {
+      exerciseId: 'cable_row',
+      rungIndex: 0,
+      sets: 3,
+      low: 8,
+      high: 12,
+      weightKg: 32.5,
+      prescription: '3 x 8-12 @ 32.5 kg',
+    },
+    {
+      exerciseId: 'shoulder_press',
+      rungIndex: 0,
+      sets: 3,
+      low: 6,
+      high: 10,
+      weightKg: 22.5,
+      prescription: '3 x 6-10 @ 22.5 kg',
+    },
+    {
+      exerciseId: 'deadlift',
+      rungIndex: 0,
+      sets: 3,
+      low: 5,
+      high: 8,
+      weightKg: 40,
+      prescription: '3 x 5-8 @ 40 kg',
+    },
+    { exerciseId: 'hollow', rungIndex: 2, sets: 3, low: 30, high: 30, timed: true, prescription: '3 x 30 s' },
+  ],
+};
+
+export function beginnerProgramFor(mode: Mode, stage: BeginnerStage): BeginnerItem[] {
+  return mode === 'home' ? BEGINNER_PROGRAM[stage] : BEGINNER_PROGRAM_GYM[stage];
+}
 
 // ─── Per-exercise progress carried in profile.exercise_state ─────────────────
 
@@ -181,6 +321,21 @@ function resolve(exerciseId: string, state: ExerciseState): WorkoutItem {
 function fromBeginner(items: BeginnerItem[]): WorkoutItem[] {
   return items.map((it) => {
     const ex = getExercise(it.exerciseId);
+    if (ex.track === 'gym') {
+      const w = ex.weight!;
+      const weightKg = it.weightKg ?? w.startKg;
+      return {
+        exerciseId: it.exerciseId,
+        name: ex.name,
+        rungName: `${weightKg} kg`,
+        rungIndex: 0,
+        weightKg,
+        sets: it.sets,
+        low: it.low,
+        high: it.high,
+        prescription: it.prescription,
+      };
+    }
     const rung = ex.ladder[it.rungIndex];
     return {
       exerciseId: it.exerciseId,
@@ -209,9 +364,9 @@ export interface BuildOptions {
 export function buildWorkout(opts: BuildOptions): WorkoutItem[] {
   const { mode, stage, state, kind, splitDay } = opts;
 
-  // Home beginners follow the fixed W1->W2->W3 block.
-  if (mode === 'home' && stage !== 'standard') {
-    return fromBeginner(BEGINNER_PROGRAM[stage]);
+  // Beginners follow the fixed W1->W2->W3 block (home or gym Main).
+  if (stage !== 'standard') {
+    return fromBeginner(beginnerProgramFor(mode, stage));
   }
 
   const framework = mode === 'home' ? HOME_FRAMEWORK : GYM_FRAMEWORK;
