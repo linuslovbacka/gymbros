@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useApp } from '../state/store';
 import {
   ceilingPromptCopy,
@@ -22,10 +22,10 @@ import {
 import {
   BEGINNER_ONBOARDING,
   splitDaySuggestion,
-  suggestedSplitDay,
   type WorkoutItem,
 } from '../content/workouts';
-import { describeBeginnerWeek, todayPreview } from '../content/schedule';
+import { describeBeginnerWeek } from '../content/schedule';
+import { applySessionPick, listSessionPicks, type SessionPick } from '../content/train-menu';
 import { cooldownVariantForMain } from '../content/mobility';
 import type { Mode, SplitDay } from '../content/types';
 import type { LoggedEntry } from '../engine/types';
@@ -50,35 +50,7 @@ function offersMainCooldown(routine: WorkoutRoutine): boolean {
   return routine === 'main';
 }
 
-type Phase = 'routine' | 'mode' | 'beginnerBrief' | 'homekind' | 'warmup' | 'log';
-
-function parseInitialRoutine(raw: string | null | undefined, showGlutes: boolean): WorkoutRoutine | null {
-  if (raw === 'main' || raw === 'skills' || raw === 'conditioning' || raw === 'mobility') return raw;
-  if (raw === 'glutes' && showGlutes) return 'glutes';
-  return null;
-}
-
-function goToLogOrWarmup(
-  routine: WorkoutRoutine,
-  setPhase: (p: Phase) => void,
-  profile: { program_stage: string },
-  mode: Mode,
-  setKind: (k: 'full' | 'split') => void,
-) {
-  if (routine === 'conditioning' || routine === 'mobility') {
-    setPhase('log');
-    return;
-  }
-  if (routine === 'main' && profile.program_stage !== 'standard') {
-    setPhase('beginnerBrief');
-    return;
-  }
-  if (strengthRoutine(routine)) {
-    setPhase('warmup');
-    return;
-  }
-  setPhase('log');
-}
+type Phase = 'mode' | 'pick' | 'warmup' | 'log';
 
 export function WorkoutScreen({
   onFinish,
@@ -87,44 +59,44 @@ export function WorkoutScreen({
 }: {
   onFinish: (d: SessionDraft) => void;
   onCancel: () => void;
-  /** From `/workout?routine=skills` */
+  /** Reserved for `/workout?routine=…` — user still picks Home/Gym first. */
   initialRoutineParam?: string | null;
 }) {
   const { user, profile, lastSplitDay, skipBeginnerProgram } = useApp();
   const showGlutes = canShowGluteRoutine(user?.id);
 
-  const preset = parseInitialRoutine(initialRoutineParam, showGlutes);
+  void initialRoutineParam;
 
-  const [routine, setRoutine] = useState<WorkoutRoutine>(preset ?? 'main');
-  const [phase, setPhase] = useState<Phase>(() => {
-    if (preset === 'conditioning' || preset === 'mobility') return 'log';
-    if (preset) return 'mode';
-    return 'routine';
-  });
+  const [routine, setRoutine] = useState<WorkoutRoutine>('main');
+  const [phase, setPhase] = useState<Phase>('mode');
   const [mode, setMode] = useState<Mode>('home');
   const [kind, setKind] = useState<'full' | 'split'>('full');
   const [chosenSplitDay, setChosenSplitDay] = useState<SplitDay | undefined>();
   const [includeJumpRope, setIncludeJumpRope] = useState(false);
   const [skipSheetOpen, setSkipSheetOpen] = useState(false);
   const [showBeginnerFullPlan, setShowBeginnerFullPlan] = useState(false);
-  const [homekindPick, setHomekindPick] = useState<{ kind: 'full' | 'split'; splitDay: SplitDay }>(() => ({
-    kind: 'split',
-    splitDay: suggestedSplitDay(lastSplitDay),
-  }));
 
   const sessionSplitDay = kind === 'split' ? chosenSplitDay : undefined;
 
-  const homekindPreview = useMemo(() => {
-    if (!profile || phase !== 'homekind') return [];
-    const previewKind = homekindPick.kind;
-    return todayPreview({
+  const sessionPicks = useMemo(() => {
+    if (!profile || phase !== 'pick') return [];
+    return listSessionPicks({
       mode,
-      kind: previewKind,
-      stage: profile.program_stage,
-      state: profile.exercise_state,
-      splitDay: previewKind === 'split' ? homekindPick.splitDay : undefined,
+      programStage: profile.program_stage,
+      lastSplitDay,
+      showGlutes,
     });
-  }, [profile, phase, mode, homekindPick]);
+  }, [profile, phase, mode, lastSplitDay, showGlutes]);
+
+  function startSession(pick: SessionPick) {
+    setIncludeJumpRope(false);
+    const { needsWarmup } = applySessionPick(pick, {
+      setRoutine,
+      setKind,
+      setChosenSplitDay,
+    });
+    setPhase(needsWarmup ? 'warmup' : 'log');
+  }
 
   const items = useMemo<WorkoutItem[]>(() => {
     if (!profile || phase !== 'log') return [];
@@ -141,65 +113,19 @@ export function WorkoutScreen({
     return base;
   }, [profile, phase, routine, mode, kind, sessionSplitDay, includeJumpRope]);
 
-  useEffect(() => {
-    if (phase === 'beginnerBrief' && profile?.program_stage === 'standard') {
-      setPhase('homekind');
-    }
-  }, [phase, profile?.program_stage]);
-
   if (!profile) return null;
-
-  if (phase === 'routine') {
-    const options: WorkoutRoutine[] = showGlutes
-      ? ['main', 'skills', 'glutes', 'mobility', 'conditioning']
-      : ['main', 'skills', 'mobility', 'conditioning'];
-    return (
-      <div className="screen">
-        <Topbar onBack={onCancel} title="What today?" />
-        <div className="choice">
-          {options.map((id) => {
-            const { title, sub } = ROUTINE_LABELS[id];
-            return (
-              <ChoiceBtn
-                key={id}
-                label={title}
-                sub={sub}
-                onClick={() => {
-                  setRoutine(id);
-                  if (id === 'conditioning' || id === 'mobility') {
-                    setMode('home');
-                    setKind('full');
-                    setPhase('log');
-                  } else {
-                    setPhase('mode');
-                  }
-                }}
-              />
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
 
   if (phase === 'mode') {
     return (
       <div className="screen">
-        <Topbar onBack={() => (preset ? onCancel() : setPhase('routine'))} title="Where are you?" />
+        <Topbar onBack={onCancel} title="Where are you?" />
         <div className="choice">
           <ChoiceBtn
             label="Home"
             sub="Rings, parallettes, vest, DB/KB"
             onClick={() => {
               setMode('home');
-              if (routine === 'main' && profile.program_stage !== 'standard') {
-                setPhase('beginnerBrief');
-              } else if (routine === 'main') {
-                setHomekindPick({ kind: 'split', splitDay: suggestedSplitDay(lastSplitDay) });
-                setPhase('homekind');
-              } else {
-                goToLogOrWarmup(routine, setPhase, profile, 'home', setKind);
-              }
+              setPhase('pick');
             }}
           />
           <ChoiceBtn
@@ -207,15 +133,7 @@ export function WorkoutScreen({
             sub="Weights and machines"
             onClick={() => {
               setMode('gym');
-              if (routine === 'main' && profile.program_stage !== 'standard') {
-                setPhase('beginnerBrief');
-              } else if (routine === 'main') {
-                setHomekindPick({ kind: 'full', splitDay: suggestedSplitDay(lastSplitDay) });
-                setPhase('homekind');
-              } else {
-                setKind('full');
-                goToLogOrWarmup(routine, setPhase, profile, 'gym', setKind);
-              }
+              setPhase('pick');
             }}
           />
         </div>
@@ -223,159 +141,93 @@ export function WorkoutScreen({
     );
   }
 
-  if (phase === 'beginnerBrief') {
+  if (phase === 'pick') {
     const stage = profile.program_stage;
-    if (stage === 'standard') return null;
-    const weekItems = describeBeginnerWeek(stage, mode);
+    const inBeginner = stage !== 'standard';
     const modeLabel = mode === 'home' ? 'Home' : 'Gym';
+
     return (
       <div className="screen">
-        <Topbar onBack={() => setPhase('mode')} title={BEGINNER_ONBOARDING.title} />
-        {BEGINNER_ONBOARDING.bullets.map((line) => (
-          <p key={line} className="muted">
-            {line}
-          </p>
-        ))}
-        <p className="muted tiny">{BEGINNER_ONBOARDING.advanceDetail}</p>
-        <h3 className="section-title">
-          Today · {stage.toUpperCase()} · {modeLabel}
-          <span className="chip"> Beginner ramp</span>
-        </h3>
-        <ul className="schedule-list">
-          {weekItems.map((it) => (
-            <li key={it.exerciseId}>
-              <strong>{it.name}</strong> — {it.prescription}
-            </li>
-          ))}
-        </ul>
-        <button
-          type="button"
-          className="btn"
-          onClick={() => setShowBeginnerFullPlan((v) => !v)}
-        >
-          {showBeginnerFullPlan ? 'Hide full week plan' : 'Full week plan (W1–W3)'}
-        </button>
-        {showBeginnerFullPlan &&
-          (['w1', 'w2', 'w3'] as const).map((week) => (
-            <div key={week} className="schedule-block">
-              <h3 className="section-title">
-                Week {week.slice(1).toUpperCase()}
-                {stage === week && <span className="chip"> You are here</span>}
-              </h3>
-              <p className="muted">
-                <strong>Home</strong>
-              </p>
-              <ul className="schedule-list">
-                {describeBeginnerWeek(week, 'home').map((it) => (
-                  <li key={`home-${it.exerciseId}`}>
-                    <strong>{it.name}</strong> — {it.prescription}
-                  </li>
-                ))}
-              </ul>
-              <p className="muted">
-                <strong>Gym</strong>
-              </p>
-              <ul className="schedule-list">
-                {describeBeginnerWeek(week, 'gym').map((it) => (
-                  <li key={`gym-${it.exerciseId}`}>
-                    <strong>{it.name}</strong> — {it.prescription}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+        <Topbar onBack={() => setPhase('mode')} title="What today?" />
+        <p className="muted tiny">
+          {modeLabel}
+          {inBeginner ? (
+            <>
+              {' · '}
+              {BEGINNER_ONBOARDING.title}
+            </>
+          ) : (
+            <> · {splitDaySuggestion(lastSplitDay)}</>
+          )}
+        </p>
+        {inBeginner && (
+          <p className="muted tiny">{BEGINNER_ONBOARDING.advanceDetail}</p>
+        )}
         <div className="choice">
-          <ChoiceBtn
-            label="Start workout"
-            sub={`${modeLabel} Main · week ${stage.slice(1).toUpperCase()}`}
-            onClick={() => {
-              setKind('full');
-              setPhase('warmup');
-            }}
-          />
-          <ChoiceBtn
-            label={BEGINNER_ONBOARDING.skipLabel}
-            sub="Same week counter — unlocks split/full choices"
-            onClick={() => setSkipSheetOpen(true)}
-          />
+          {sessionPicks.map((row) => (
+            <ChoiceBtn
+              key={row.id}
+              label={row.label}
+              sub={row.sub}
+              onClick={() => startSession(row.pick)}
+            />
+          ))}
         </div>
-        <SkipBeginnerSheet
-          open={skipSheetOpen}
-          onClose={() => setSkipSheetOpen(false)}
-          onConfirm={() => {
-            skipBeginnerProgram();
-            setPhase('homekind');
-          }}
-        />
-      </div>
-    );
-  }
-
-  if (phase === 'homekind') {
-    const suggested = suggestedSplitDay(lastSplitDay);
-    const splitSub = (day: SplitDay) => {
-      const hint = day === 'upper' ? 'Push · pull · core' : 'Legs · glutes · hang';
-      if (lastSplitDay && day === suggested) return `${hint} (suggested)`;
-      return hint;
-    };
-    const pickFull = homekindPick.kind === 'full';
-    const pickUpper = homekindPick.kind === 'split' && homekindPick.splitDay === 'upper';
-    const pickLower = homekindPick.kind === 'split' && homekindPick.splitDay === 'lower';
-
-    function continueToWarmup() {
-      setKind(homekindPick.kind);
-      setChosenSplitDay(homekindPick.kind === 'split' ? homekindPick.splitDay : undefined);
-      setPhase('warmup');
-    }
-
-    return (
-      <div className="screen">
-        <Topbar onBack={() => setPhase('mode')} title="How much today?" />
-        <p className="muted tiny">{splitDaySuggestion(lastSplitDay)}</p>
-        <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
-          {mode === 'gym' && (
+        {inBeginner && (
+          <>
             <button
               type="button"
-              className={`btn ${pickFull ? 'btn-primary' : ''}`}
-              onClick={() => setHomekindPick({ kind: 'full', splitDay: homekindPick.splitDay })}
+              className="btn"
+              onClick={() => setShowBeginnerFullPlan((v) => !v)}
             >
-              Full
+              {showBeginnerFullPlan ? 'Hide full week plan' : 'Full week plan (W1–W3)'}
             </button>
-          )}
-          <button
-            type="button"
-            className={`btn ${pickUpper ? 'btn-primary' : ''}`}
-            onClick={() => setHomekindPick({ kind: 'split', splitDay: 'upper' })}
-          >
-            Upper
-          </button>
-          <button
-            type="button"
-            className={`btn ${pickLower ? 'btn-primary' : ''}`}
-            onClick={() => setHomekindPick({ kind: 'split', splitDay: 'lower' })}
-          >
-            Lower
-          </button>
-        </div>
-        <h3 className="section-title">Today&apos;s exercises</h3>
-        <ul className="schedule-list">
-          {homekindPreview.map((item) => (
-            <li key={item.exerciseId}>
-              <strong>{item.name}</strong> — {item.prescription}
-              <span className="muted"> ({item.rungName})</span>
-            </li>
-          ))}
-        </ul>
-        <p className="muted tiny">
-          {pickFull
-            ? 'Full body session'
-            : pickUpper
-              ? splitSub('upper')
-              : splitSub('lower')}
-        </p>
-        <button type="button" className="btn btn-primary btn-block" onClick={continueToWarmup}>
-          Continue to warmup
-        </button>
+            {showBeginnerFullPlan &&
+              (['w1', 'w2', 'w3'] as const).map((week) => (
+                <div key={week} className="schedule-block">
+                  <h3 className="section-title">
+                    Week {week.slice(1).toUpperCase()}
+                    {stage === week && <span className="chip"> You are here</span>}
+                  </h3>
+                  <p className="muted">
+                    <strong>Home</strong>
+                  </p>
+                  <ul className="schedule-list">
+                    {describeBeginnerWeek(week, 'home').map((it) => (
+                      <li key={`home-${it.exerciseId}`}>
+                        <strong>{it.name}</strong> — {it.prescription}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="muted">
+                    <strong>Gym</strong>
+                  </p>
+                  <ul className="schedule-list">
+                    {describeBeginnerWeek(week, 'gym').map((it) => (
+                      <li key={`gym-${it.exerciseId}`}>
+                        <strong>{it.name}</strong> — {it.prescription}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            <div className="choice">
+              <ChoiceBtn
+                label={BEGINNER_ONBOARDING.skipLabel}
+                sub="Same week counter — unlocks split/full choices"
+                onClick={() => setSkipSheetOpen(true)}
+              />
+            </div>
+            <SkipBeginnerSheet
+              open={skipSheetOpen}
+              onClose={() => setSkipSheetOpen(false)}
+              onConfirm={() => {
+                skipBeginnerProgram();
+                setShowBeginnerFullPlan(false);
+              }}
+            />
+          </>
+        )}
       </div>
     );
   }
@@ -385,15 +237,7 @@ export function WorkoutScreen({
     return (
       <div className="screen">
         <Topbar
-          onBack={() => {
-            if (routine === 'main' && profile.program_stage === 'standard') {
-              setPhase('homekind');
-            } else if (routine === 'main' && profile.program_stage !== 'standard') {
-              setPhase('beginnerBrief');
-            } else {
-              setPhase('mode');
-            }
-          }}
+          onBack={() => setPhase('pick')}
           title={beginnerStage ? `Warmup · ${mode === 'home' ? 'Home' : 'Gym'} · ${beginnerStage}` : 'Warmup'}
         />
         <p className="warmup-intro muted">{JUMP_ROPE_WARMUP_GUIDE}</p>
@@ -421,13 +265,11 @@ export function WorkoutScreen({
 
   const logBack = () => {
     if (routine === 'mobility' || routine === 'conditioning') {
-      setPhase('routine');
+      setPhase('pick');
       return;
     }
     if (strengthRoutine(routine)) setPhase('warmup');
-    else if (routine === 'main' && profile.program_stage === 'standard') setPhase('homekind');
-    else if (routine === 'main' && profile.program_stage !== 'standard') setPhase('beginnerBrief');
-    else setPhase('mode');
+    else setPhase('pick');
   };
 
   const superset = useSupersetFlow({ mode, routine });
