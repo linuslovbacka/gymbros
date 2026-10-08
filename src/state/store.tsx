@@ -45,6 +45,7 @@ export interface CompleteSessionInput {
   entries: LoggedEntry[];
   feel: Feel;
   progress: ProgressAnswer;
+  cooldownCompleted?: boolean;
 }
 
 export interface CompleteSessionResult {
@@ -624,7 +625,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     ) {
       setLastSplitDay(input.splitDay);
     }
-    if (isMobility) {
+    if (isMobility || input.cooldownCompleted) {
       await upsertHabits({ mobility_met: true });
     }
     await flushSave();

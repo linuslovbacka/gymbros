@@ -18,8 +18,15 @@ import {
   roundsForBlock,
   type SupersetBlock,
 } from '@/lib/workout-superset';
+import { CooldownStep } from '@/components/CooldownStep';
+import { TimedSetInput } from '@/components/TimedSetInput';
+import { cooldownVariantForMain } from '@/content/mobility';
 import { useApp } from '@/state/store';
 import type { SessionDraft } from '@/screens/WorkoutScreen';
+
+function offersMainCooldown(routine: WorkoutRoutine): boolean {
+  return routine === 'main';
+}
 
 type VideoTab = 'a' | 'b';
 
@@ -50,13 +57,14 @@ export function SupersetLogPhase({
   const [pairStep, setPairStep] = useState<VideoTab>('a');
 
   const [values, setValues] = useState<number[][]>(() =>
-    initialItems.map((it) => Array(it.sets).fill(it.low)),
+    initialItems.map((it) => Array(it.sets).fill(it.timed ? 0 : it.low)),
   );
   const [weights, setWeights] = useState<number[][]>(() =>
     initialItems.map((it) => Array(it.sets).fill(it.weightKg ?? 0)),
   );
   const [accessoryWeight, setAccessoryWeight] = useState<boolean[]>(() => initialItems.map(() => false));
   const [ceilingDismissed, setCeilingDismissed] = useState<boolean[]>(() => initialItems.map(() => false));
+  const [pendingDraft, setPendingDraft] = useState<SessionDraft | null>(null);
 
   const block = blocks[blockIdx]!;
   const rounds = roundsForBlock(block, logItems);
@@ -96,7 +104,18 @@ export function SupersetLogPhase({
   function renderSetRow(itemIndex: number, setNo: number, label: string) {
     const it = logItems[itemIndex]!;
     if (setNo >= it.sets) return null;
-    const u = it.timed ? 'sec' : 'reps';
+    if (it.timed) {
+      return (
+        <TimedSetInput
+          key={`${itemIndex}-${setNo}`}
+          label={label}
+          targetLow={it.low}
+          targetHigh={it.high}
+          value={values[itemIndex][setNo] ?? 0}
+          onChange={(sec) => setVal(itemIndex, setNo, sec)}
+        />
+      );
+    }
     return (
       <div className="superset-set-block" key={`${itemIndex}-${setNo}`}>
         <div className="superset-set-label">{label}</div>
@@ -121,7 +140,7 @@ export function SupersetLogPhase({
             value={values[itemIndex][setNo]}
             onChange={(e) => setVal(itemIndex, setNo, Number(e.target.value))}
           />
-          <span className="unit">{u}</span>
+          <span className="unit">reps</span>
           <button type="button" className="stepper" onClick={() => setVal(itemIndex, setNo, values[itemIndex][setNo] + 1)}>+</button>
         </div>
       </div>
@@ -249,7 +268,7 @@ export function SupersetLogPhase({
     onBack();
   }
 
-  function finish() {
+  function buildDraft(): SessionDraft {
     const entries: LoggedEntry[] = logItems.map((it, i) => {
       const e = getExercise(it.exerciseId);
       const mult = e.track === 'gym' ? 0 : e.ladder[it.rungIndex]?.ironMultiplier ?? 1;
@@ -269,14 +288,35 @@ export function SupersetLogPhase({
         })),
       };
     });
-    onFinish({
+    return {
       routine,
       mode,
       kind,
       flow: 'superset',
       splitDay: kind === 'split' ? splitDay : undefined,
       entries,
-    });
+    };
+  }
+
+  function finish() {
+    const draft = buildDraft();
+    if (offersMainCooldown(routine)) {
+      setPendingDraft(draft);
+      return;
+    }
+    onFinish(draft);
+  }
+
+  if (pendingDraft) {
+    const variant = cooldownVariantForMain(pendingDraft.kind, splitDay);
+    return (
+      <CooldownStep
+        variant={variant}
+        onBack={() => setPendingDraft(null)}
+        onSkip={() => onFinish(pendingDraft)}
+        onComplete={() => onFinish({ ...pendingDraft, cooldownCompleted: true })}
+      />
+    );
   }
 
   const sessionTitle = ROUTINE_LABELS[routine].title;

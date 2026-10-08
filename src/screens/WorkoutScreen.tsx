@@ -21,16 +21,18 @@ import {
 } from '../content/routines';
 import {
   BEGINNER_ONBOARDING,
-  SPLIT_DAY_LABEL,
   splitDaySuggestion,
   suggestedSplitDay,
   type WorkoutItem,
 } from '../content/workouts';
-import { describeBeginnerWeek } from '../content/schedule';
+import { describeBeginnerWeek, todayPreview } from '../content/schedule';
+import { cooldownVariantForMain } from '../content/mobility';
 import type { Mode, SplitDay } from '../content/types';
 import type { LoggedEntry } from '../engine/types';
+import { CooldownStep } from '@/components/CooldownStep';
 import { SupersetLogPhase } from '@/components/SupersetLogPhase';
 import { SkipBeginnerSheet } from '@/components/SkipBeginnerSheet';
+import { TimedSetInput } from '@/components/TimedSetInput';
 import { canShowGluteRoutine } from '@/lib/personal-routines';
 import { useSupersetFlow } from '@/lib/workout-superset';
 
@@ -41,6 +43,11 @@ export interface SessionDraft {
   flow?: 'classic' | 'superset';
   splitDay?: SplitDay;
   entries: LoggedEntry[];
+  cooldownCompleted?: boolean;
+}
+
+function offersMainCooldown(routine: WorkoutRoutine): boolean {
+  return routine === 'main';
 }
 
 type Phase = 'routine' | 'mode' | 'beginnerBrief' | 'homekind' | 'warmup' | 'log';
@@ -99,8 +106,25 @@ export function WorkoutScreen({
   const [chosenSplitDay, setChosenSplitDay] = useState<SplitDay | undefined>();
   const [includeJumpRope, setIncludeJumpRope] = useState(false);
   const [skipSheetOpen, setSkipSheetOpen] = useState(false);
+  const [showBeginnerFullPlan, setShowBeginnerFullPlan] = useState(false);
+  const [homekindPick, setHomekindPick] = useState<{ kind: 'full' | 'split'; splitDay: SplitDay }>(() => ({
+    kind: 'split',
+    splitDay: suggestedSplitDay(lastSplitDay),
+  }));
 
   const sessionSplitDay = kind === 'split' ? chosenSplitDay : undefined;
+
+  const homekindPreview = useMemo(() => {
+    if (!profile || phase !== 'homekind') return [];
+    const previewKind = homekindPick.kind;
+    return todayPreview({
+      mode,
+      kind: previewKind,
+      stage: profile.program_stage,
+      state: profile.exercise_state,
+      splitDay: previewKind === 'split' ? homekindPick.splitDay : undefined,
+    });
+  }, [profile, phase, mode, homekindPick]);
 
   const items = useMemo<WorkoutItem[]>(() => {
     if (!profile || phase !== 'log') return [];
@@ -171,6 +195,7 @@ export function WorkoutScreen({
               if (routine === 'main' && profile.program_stage !== 'standard') {
                 setPhase('beginnerBrief');
               } else if (routine === 'main') {
+                setHomekindPick({ kind: 'split', splitDay: suggestedSplitDay(lastSplitDay) });
                 setPhase('homekind');
               } else {
                 goToLogOrWarmup(routine, setPhase, profile, 'home', setKind);
@@ -185,6 +210,7 @@ export function WorkoutScreen({
               if (routine === 'main' && profile.program_stage !== 'standard') {
                 setPhase('beginnerBrief');
               } else if (routine === 'main') {
+                setHomekindPick({ kind: 'full', splitDay: suggestedSplitDay(lastSplitDay) });
                 setPhase('homekind');
               } else {
                 setKind('full');
@@ -222,6 +248,42 @@ export function WorkoutScreen({
             </li>
           ))}
         </ul>
+        <button
+          type="button"
+          className="btn"
+          onClick={() => setShowBeginnerFullPlan((v) => !v)}
+        >
+          {showBeginnerFullPlan ? 'Hide full week plan' : 'Full week plan (W1–W3)'}
+        </button>
+        {showBeginnerFullPlan &&
+          (['w1', 'w2', 'w3'] as const).map((week) => (
+            <div key={week} className="schedule-block">
+              <h3 className="section-title">
+                Week {week.slice(1).toUpperCase()}
+                {stage === week && <span className="chip"> You are here</span>}
+              </h3>
+              <p className="muted">
+                <strong>Home</strong>
+              </p>
+              <ul className="schedule-list">
+                {describeBeginnerWeek(week, 'home').map((it) => (
+                  <li key={`home-${it.exerciseId}`}>
+                    <strong>{it.name}</strong> — {it.prescription}
+                  </li>
+                ))}
+              </ul>
+              <p className="muted">
+                <strong>Gym</strong>
+              </p>
+              <ul className="schedule-list">
+                {describeBeginnerWeek(week, 'gym').map((it) => (
+                  <li key={`gym-${it.exerciseId}`}>
+                    <strong>{it.name}</strong> — {it.prescription}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         <div className="choice">
           <ChoiceBtn
             label="Start workout"
@@ -256,41 +318,64 @@ export function WorkoutScreen({
       if (lastSplitDay && day === suggested) return `${hint} (suggested)`;
       return hint;
     };
+    const pickFull = homekindPick.kind === 'full';
+    const pickUpper = homekindPick.kind === 'split' && homekindPick.splitDay === 'upper';
+    const pickLower = homekindPick.kind === 'split' && homekindPick.splitDay === 'lower';
+
+    function continueToWarmup() {
+      setKind(homekindPick.kind);
+      setChosenSplitDay(homekindPick.kind === 'split' ? homekindPick.splitDay : undefined);
+      setPhase('warmup');
+    }
+
     return (
       <div className="screen">
         <Topbar onBack={() => setPhase('mode')} title="How much today?" />
         <p className="muted tiny">{splitDaySuggestion(lastSplitDay)}</p>
-        <div className="choice">
+        <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
           {mode === 'gym' && (
-            <ChoiceBtn
-              label="Full workout"
-              sub="Every direction, ~20 min"
-              onClick={() => {
-                setKind('full');
-                setChosenSplitDay(undefined);
-                setPhase('warmup');
-              }}
-            />
+            <button
+              type="button"
+              className={`btn ${pickFull ? 'btn-primary' : ''}`}
+              onClick={() => setHomekindPick({ kind: 'full', splitDay: homekindPick.splitDay })}
+            >
+              Full
+            </button>
           )}
-          <ChoiceBtn
-            label={SPLIT_DAY_LABEL.upper}
-            sub={splitSub('upper')}
-            onClick={() => {
-              setKind('split');
-              setChosenSplitDay('upper');
-              setPhase('warmup');
-            }}
-          />
-          <ChoiceBtn
-            label={SPLIT_DAY_LABEL.lower}
-            sub={splitSub('lower')}
-            onClick={() => {
-              setKind('split');
-              setChosenSplitDay('lower');
-              setPhase('warmup');
-            }}
-          />
+          <button
+            type="button"
+            className={`btn ${pickUpper ? 'btn-primary' : ''}`}
+            onClick={() => setHomekindPick({ kind: 'split', splitDay: 'upper' })}
+          >
+            Upper
+          </button>
+          <button
+            type="button"
+            className={`btn ${pickLower ? 'btn-primary' : ''}`}
+            onClick={() => setHomekindPick({ kind: 'split', splitDay: 'lower' })}
+          >
+            Lower
+          </button>
         </div>
+        <h3 className="section-title">Today&apos;s exercises</h3>
+        <ul className="schedule-list">
+          {homekindPreview.map((item) => (
+            <li key={item.exerciseId}>
+              <strong>{item.name}</strong> — {item.prescription}
+              <span className="muted"> ({item.rungName})</span>
+            </li>
+          ))}
+        </ul>
+        <p className="muted tiny">
+          {pickFull
+            ? 'Full body session'
+            : pickUpper
+              ? splitSub('upper')
+              : splitSub('lower')}
+        </p>
+        <button type="button" className="btn btn-primary btn-block" onClick={continueToWarmup}>
+          Continue to warmup
+        </button>
       </div>
     );
   }
@@ -395,12 +480,15 @@ function LogPhase({
   const { climbExercise } = useApp();
   const [logItems, setLogItems] = useState<WorkoutItem[]>(() => items);
   const [idx, setIdx] = useState(0);
-  const [values, setValues] = useState<number[][]>(() => items.map((it) => Array(it.sets).fill(it.low)));
+  const [values, setValues] = useState<number[][]>(() =>
+    items.map((it) => Array(it.sets).fill(it.timed ? 0 : it.low)),
+  );
   const [weights, setWeights] = useState<number[][]>(() =>
     items.map((it) => Array(it.sets).fill(it.weightKg ?? 0)),
   );
   const [accessoryWeight, setAccessoryWeight] = useState<boolean[]>(() => items.map(() => false));
   const [ceilingDismissed, setCeilingDismissed] = useState<boolean[]>(() => items.map(() => false));
+  const [pendingDraft, setPendingDraft] = useState<SessionDraft | null>(null);
 
   const item = logItems[idx]!;
   const ex = getExercise(item.exerciseId);
@@ -448,7 +536,7 @@ function LogPhase({
     dismissCeilingPrompt();
   }
 
-  function finish() {
+  function buildDraft(): SessionDraft {
     const entries: LoggedEntry[] = logItems.map((it, i) => {
       const e = getExercise(it.exerciseId);
       const mult = e.track === 'gym' ? 0 : e.ladder[it.rungIndex]?.ironMultiplier ?? 1;
@@ -468,17 +556,37 @@ function LogPhase({
         })),
       };
     });
-    onFinish({
+    return {
       routine,
       mode,
       kind,
       flow: 'classic',
       splitDay: kind === 'split' ? splitDay : undefined,
       entries,
-    });
+    };
   }
 
-  const unit = item.timed ? 'sec' : 'reps';
+  function finish() {
+    const draft = buildDraft();
+    if (offersMainCooldown(routine)) {
+      setPendingDraft(draft);
+      return;
+    }
+    onFinish(draft);
+  }
+
+  if (pendingDraft) {
+    const variant = cooldownVariantForMain(pendingDraft.kind, splitDay);
+    return (
+      <CooldownStep
+        variant={variant}
+        onBack={() => setPendingDraft(null)}
+        onSkip={() => onFinish(pendingDraft)}
+        onComplete={() => onFinish({ ...pendingDraft, cooldownCompleted: true })}
+      />
+    );
+  }
+
   const sessionTitle = ROUTINE_LABELS[routine].title;
 
   return (
@@ -555,35 +663,46 @@ function LogPhase({
         )}
 
         <div className="set-list">
-          {Array.from({ length: item.sets }).map((_, s) => (
-            <div className="set-row" key={s}>
-              <span className="set-no">Set {s + 1}</span>
-              {showWeight && (
+          {Array.from({ length: item.sets }).map((_, s) =>
+            item.timed ? (
+              <TimedSetInput
+                key={s}
+                label={`Set ${s + 1}`}
+                targetLow={item.low}
+                targetHigh={item.high}
+                value={values[idx][s] ?? 0}
+                onChange={(sec) => setVal(s, sec)}
+              />
+            ) : (
+              <div className="set-row" key={s}>
+                <span className="set-no">Set {s + 1}</span>
+                {showWeight && (
+                  <div className="set-input">
+                    <button type="button" className="stepper" onClick={() => setWeight(s, (weights[idx][s] ?? 0) - 2.5)}>-</button>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      value={weights[idx][s]}
+                      onChange={(e) => setWeight(s, Number(e.target.value))}
+                    />
+                    <span className="unit">kg</span>
+                    <button type="button" className="stepper" onClick={() => setWeight(s, (weights[idx][s] ?? 0) + 2.5)}>+</button>
+                  </div>
+                )}
                 <div className="set-input">
-                  <button type="button" className="stepper" onClick={() => setWeight(s, (weights[idx][s] ?? 0) - 2.5)}>-</button>
+                  <button type="button" className="stepper" onClick={() => setVal(s, values[idx][s] - 1)}>-</button>
                   <input
                     type="number"
-                    inputMode="decimal"
-                    value={weights[idx][s]}
-                    onChange={(e) => setWeight(s, Number(e.target.value))}
+                    inputMode="numeric"
+                    value={values[idx][s]}
+                    onChange={(e) => setVal(s, Number(e.target.value))}
                   />
-                  <span className="unit">kg</span>
-                  <button type="button" className="stepper" onClick={() => setWeight(s, (weights[idx][s] ?? 0) + 2.5)}>+</button>
+                  <span className="unit">reps</span>
+                  <button type="button" className="stepper" onClick={() => setVal(s, values[idx][s] + 1)}>+</button>
                 </div>
-              )}
-              <div className="set-input">
-                <button type="button" className="stepper" onClick={() => setVal(s, values[idx][s] - 1)}>-</button>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  value={values[idx][s]}
-                  onChange={(e) => setVal(s, Number(e.target.value))}
-                />
-                <span className="unit">{unit}</span>
-                <button type="button" className="stepper" onClick={() => setVal(s, values[idx][s] + 1)}>+</button>
               </div>
-            </div>
-          ))}
+            ),
+          )}
         </div>
       </div>
 

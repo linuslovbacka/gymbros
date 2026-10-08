@@ -29,7 +29,16 @@ export const MOBILITY_STRETCH_GUIDE: Record<string, { title: string; cue: string
 export const MOBILITY_SESSION_INTRO = {
   title: 'Mobility session',
   intro: 'Hold each stretch for the timer. Use the easiest rung that still feels like work — no bouncing.',
-  when: 'After strength or on rest days. Counts toward your Mobility habit when you finish.',
+  when: 'On rest days or when you want a dedicated hips/hamstrings block. Counts toward your Mobility habit when you finish.',
+} as const;
+
+export type CooldownVariant = 'upper' | 'lower' | 'full';
+
+export const COOLDOWN_STEP = {
+  title: 'Optional cooldown',
+  intro: '5–10 min easy stretching after Main. Counts toward your Mobility habit if you finish.',
+  skipLabel: 'Skip cooldown',
+  doneLabel: 'Done — finish session',
 } as const;
 
 export interface MobilityGuideSection {
@@ -38,10 +47,9 @@ export interface MobilityGuideSection {
 }
 
 export const MOBILITY_GUIDE = {
-  sheetTitle: 'Mobility & cooldown',
-  sheetMeta: 'Reference — default session is TRAIN → Mobility',
-  intro:
-    'Use the timed Mobility routine when you want step-by-step guidance. This sheet is for extra cooldown after upper/lower split or light work between superset rounds.',
+  sheetTitle: 'Cooldown',
+  sheetMeta: 'Optional finisher after Main',
+  intro: 'Move slow — no bouncing. For a full timed mobility block on rest days, use TRAIN → Mobility.',
   upper: {
     cooldown: {
       title: 'Upper day — cooldown (5–10 min)',
@@ -77,3 +85,18 @@ export const MOBILITY_GUIDE = {
 } as const;
 
 export const MOBILITY_HABIT_LABEL = '5+ min today';
+
+export function cooldownSections(
+  variant: CooldownVariant,
+): { title: string; items: readonly string[] }[] {
+  if (variant === 'upper') return [MOBILITY_GUIDE.upper.cooldown];
+  if (variant === 'lower') return [MOBILITY_GUIDE.lower.cooldown];
+  return [MOBILITY_GUIDE.upper.cooldown, MOBILITY_GUIDE.lower.cooldown];
+}
+
+export function cooldownVariantForMain(
+  kind: 'full' | 'split',
+  splitDay: 'upper' | 'lower',
+): CooldownVariant {
+  return kind === 'full' ? 'full' : splitDay;
+}

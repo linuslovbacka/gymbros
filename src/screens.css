@@ -55,6 +55,14 @@
   overflow: hidden;
   margin-bottom: 8px;
 }
+.start-mvp .daily-checks-stack {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 2px;
+}
 .start-mvp-footer {
   flex-shrink: 0;
   margin-top: auto;
@@ -553,6 +561,12 @@
   row-gap: 8px;
   width: 100%;
 }
+.daily-checks-stack-item {
+  width: 100%;
+  min-width: 0;
+}
+.daily-checks-stack-item > .daily-check,
+.daily-checks-stack-item > .protein-log--home,
 .daily-checks-stack > .daily-check,
 .daily-checks-stack > .protein-log--home {
   margin: 0;
@@ -1335,6 +1349,42 @@
   font-size: 12px;
   font-weight: 600;
   margin-bottom: 8px;
+}
+
+.timed-set-goal {
+  font-size: 13px;
+  margin: 0 0 8px;
+}
+.timed-set-display {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  letter-spacing: 0.06em;
+  text-align: center;
+  padding: 12px 0;
+  line-height: 1;
+}
+.timed-set-display.is-running {
+  color: var(--accent);
+}
+.timed-set-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.timed-set-actions .btn {
+  flex: 1;
+  min-width: 7rem;
+  font-size: 13px;
+}
+.timed-set-met {
+  color: var(--accent);
+  margin: 0 0 8px;
+  text-align: center;
+}
+.timed-set-logged {
+  text-align: center;
+  margin: 0 0 4px;
   color: var(--muted);
 }
 

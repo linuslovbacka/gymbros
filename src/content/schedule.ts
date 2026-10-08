@@ -62,6 +62,10 @@ export {
   BEGINNER_ONBOARDING,
 } from './workouts';
 
+/** Schedule — how TRAIN options fit the week (prose, not a menu list). */
+export const SCHEDULE_TRAIN_LEAD =
+  'Muscle grows when you train consistently, eat enough protein, and slowly do a bit more — heavier, harder, or more reps with the same form. Hit your Main sessions, progress when sets feel solid, and use rest or lighter days when recovery lags instead of maxing out every time.';
+
 /** Static reference — when to train vs rest (Schedule screen). */
 export const SICK_TRAINING_GUIDE = {
   title: 'Train vs rest',
@@ -100,7 +104,7 @@ export const SORENESS_TRAINING_GUIDE = {
   swapTitle: 'Smarter swap today',
   swap: [
     'Upper still tight? Pick lower (or the other split day) — or gym full if that fits the day.',
-    'Skills, Mobility, or easy Conditioning still count as showing up without hammering the same muscles.',
+    'TRAIN → Skills, Mobility, or easy Conditioning still count as showing up without hammering the same muscles.',
     'Beginner W1–W3 only advances when you finish a Main session (home or gym).',
   ],
   backOffTitle: 'Go easy or skip that group',

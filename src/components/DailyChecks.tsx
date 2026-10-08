@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { ProteinLogPanel, ProteinLogSummary } from '@/components/ProteinLogPanel';
@@ -111,10 +111,8 @@ export function DailyChecks({ partnerProfile }: { partnerProfile?: Profile | nul
     { scope: rootRef },
   );
 
-  if (!profile) return null;
-
   const mine = habitsToday ?? emptyHabits;
-  const trained = trainingDone(profile);
+  const trained = profile ? trainingDone(profile) : false;
   const { done, total } = habitScore(mine, trained);
 
   useEffect(() => {
@@ -135,6 +133,124 @@ export function DailyChecks({ partnerProfile }: { partnerProfile?: Profile | nul
       }
     : null;
 
+  const habitRows = useMemo(() => {
+    if (!profile) return [];
+    const rows: { id: string; done: boolean; node: React.ReactNode }[] = [
+      {
+        id: 'sleep',
+        done: mine.sleep_met,
+        node: (
+          <CheckRow
+            key="sleep"
+            label="Sleep"
+            sub={SLEEP_TARGET_LABEL}
+            done={mine.sleep_met}
+            onToggle={() => void toggleSleepMet()}
+          />
+        ),
+      },
+      {
+        id: 'no_sugar',
+        done: mine.no_sugar,
+        node: (
+          <CheckRow
+            key="no_sugar"
+            label="No sugar"
+            sub={NO_SUGAR_HABIT_HINT}
+            done={mine.no_sugar}
+            onToggle={() => void toggleNoSugar()}
+          />
+        ),
+      },
+      {
+        id: 'protein',
+        done: mine.protein_met,
+        node: <ProteinLogPanel key="protein" profile={profile} variant="home" />,
+      },
+      {
+        id: 'water',
+        done: mine.water_met,
+        node: (
+          <CheckRow
+            key="water"
+            label="Water"
+            sub={WATER_TARGET_LABEL}
+            done={mine.water_met}
+            onToggle={() => void toggleWaterMet()}
+          />
+        ),
+      },
+      {
+        id: 'steps',
+        done: mine.steps_met,
+        node: (
+          <CheckRow
+            key="steps"
+            label="Steps"
+            sub={STEPS_TARGET_LABEL}
+            done={mine.steps_met}
+            onToggle={() => void toggleStepsMet()}
+          />
+        ),
+      },
+      {
+        id: 'creatine',
+        done: mine.creatine_met,
+        node: (
+          <CheckRow
+            key="creatine"
+            label="Kreatin"
+            sub={CREATINE_GUIDE.targetLabel}
+            done={mine.creatine_met}
+            onToggle={() => void toggleCreatineMet()}
+          />
+        ),
+      },
+      {
+        id: 'mobility',
+        done: mine.mobility_met,
+        node: (
+          <CheckRow
+            key="mobility"
+            label="Mobility"
+            sub={MOBILITY_HABIT_LABEL}
+            done={mine.mobility_met}
+            onToggle={() => void toggleMobilityMet()}
+          />
+        ),
+      },
+      {
+        id: 'training',
+        done: mine.sick || trained,
+        node: mine.sick ? (
+          <CheckRow key="training" label="Training" sub="Rest day" done readOnly />
+        ) : (
+          <CheckRow key="training" label="Training" done={trained} readOnly />
+        ),
+      },
+    ];
+    return [...rows].sort((a, b) => Number(a.done) - Number(b.done));
+  }, [
+    mine.creatine_met,
+    mine.mobility_met,
+    mine.no_sugar,
+    mine.protein_met,
+    mine.sick,
+    mine.sleep_met,
+    mine.steps_met,
+    mine.water_met,
+    profile,
+    trained,
+    toggleCreatineMet,
+    toggleMobilityMet,
+    toggleNoSugar,
+    toggleSleepMet,
+    toggleStepsMet,
+    toggleWaterMet,
+  ]);
+
+  if (!profile) return null;
+
   return (
     <div className="daily-checks" ref={rootRef}>
       <div className="daily-checks-head">
@@ -153,48 +269,11 @@ export function DailyChecks({ partnerProfile }: { partnerProfile?: Profile | nul
       </button>
 
       <div className="daily-checks-stack">
-        <CheckRow
-          label="Sleep"
-          sub={SLEEP_TARGET_LABEL}
-          done={mine.sleep_met}
-          onToggle={() => void toggleSleepMet()}
-        />
-        <CheckRow
-          label="No sugar"
-          sub={NO_SUGAR_HABIT_HINT}
-          done={mine.no_sugar}
-          onToggle={() => void toggleNoSugar()}
-        />
-        <ProteinLogPanel profile={profile} variant="home" />
-        <CheckRow
-          label="Water"
-          sub={WATER_TARGET_LABEL}
-          done={mine.water_met}
-          onToggle={() => void toggleWaterMet()}
-        />
-        <CheckRow
-          label="Steps"
-          sub={STEPS_TARGET_LABEL}
-          done={mine.steps_met}
-          onToggle={() => void toggleStepsMet()}
-        />
-        <CheckRow
-          label="Kreatin"
-          sub={CREATINE_GUIDE.targetLabel}
-          done={mine.creatine_met}
-          onToggle={() => void toggleCreatineMet()}
-        />
-        <CheckRow
-          label="Mobility"
-          sub={MOBILITY_HABIT_LABEL}
-          done={mine.mobility_met}
-          onToggle={() => void toggleMobilityMet()}
-        />
-        {mine.sick ? (
-          <CheckRow label="Training" sub="Rest day" done readOnly />
-        ) : (
-          <CheckRow label="Training" done={trained} readOnly />
-        )}
+        {habitRows.map((row) => (
+          <div key={row.id} className="daily-checks-stack-item">
+            {row.node}
+          </div>
+        ))}
       </div>
 
       {bro && (
