@@ -10,6 +10,7 @@ import {
   SPLIT_DAY_ORDER,
   todayPreview,
   SICK_TRAINING_GUIDE,
+  SORENESS_TRAINING_GUIDE,
   splitDaySuggestion,
 } from '@/content/schedule';
 import type { Mode, SplitDay } from '@/content/types';
@@ -242,6 +243,36 @@ export function ScheduleScreen() {
           })}
         </section>
       )}
+
+      <section className="stack">
+        <h2 className="section-title">{SORENESS_TRAINING_GUIDE.title}</h2>
+        <p className="muted tiny">{SORENESS_TRAINING_GUIDE.disclaimer}</p>
+        <p className="muted">
+          <strong>{SORENESS_TRAINING_GUIDE.okTitle}</strong>
+        </p>
+        <ul className="schedule-list muted">
+          {SORENESS_TRAINING_GUIDE.ok.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+        <p className="muted">
+          <strong>{SORENESS_TRAINING_GUIDE.swapTitle}</strong>
+        </p>
+        <ul className="schedule-list muted">
+          {SORENESS_TRAINING_GUIDE.swap.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+        <p className="muted">
+          <strong>{SORENESS_TRAINING_GUIDE.backOffTitle}</strong>
+        </p>
+        <ul className="schedule-list muted">
+          {SORENESS_TRAINING_GUIDE.backOff.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+        <p className="muted tiny">{SORENESS_TRAINING_GUIDE.appNote}</p>
+      </section>
 
       <section className="stack">
         <h2 className="section-title">{SICK_TRAINING_GUIDE.title}</h2>

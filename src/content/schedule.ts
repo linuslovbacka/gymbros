@@ -66,7 +66,7 @@ export {
 export const SICK_TRAINING_GUIDE = {
   title: 'Train vs rest',
   disclaimer:
-    'Rough guide, not medical advice. When unsure, rest and mark “I’m sick” on home — training is excused.',
+    'Rough guide, not medical advice. When unsure, rest and mark “I’m sick” on home — training is excused. Muscle soreness after training (not illness) — see Soreness & training again above.',
   skipTitle: 'Skip the gym',
   skip: [
     'Fever, chills, or flu-like fatigue and body aches.',
@@ -84,4 +84,31 @@ export const SICK_TRAINING_GUIDE = {
     'Wait until you’re fever-free 24–48 h and energy is returning.',
     'First sessions back at ~50–70% volume — don’t catch up missed days; rejoin today’s schedule.',
   ],
+} as const;
+
+/** Static reference — soreness vs injury, same muscle group (Schedule screen). */
+export const SORENESS_TRAINING_GUIDE = {
+  title: 'Soreness & training again',
+  disclaimer:
+    'Rough guide, not medical advice. Sharp or joint pain is not “normal soreness.” When unsure, see a clinician.',
+  okTitle: 'Usually OK (normal muscle soreness)',
+  ok: [
+    'Dull stiffness 24–72 h after a hard or new session — often called DOMS (delayed-onset muscle soreness).',
+    'You don’t need zero soreness before training that group again — normal or slightly easier volume is fine.',
+    'If it eases after warm-up and sets feel OK, training the same group again is normal.',
+  ],
+  swapTitle: 'Smarter swap today',
+  swap: [
+    'Upper still tight? Pick lower (or the other split day) — or gym full if that fits the day.',
+    'Skills, Mobility, or easy Conditioning still count as showing up without hammering the same muscles.',
+    'Beginner W1–W3 only advances when you finish a Main session (home or gym).',
+  ],
+  backOffTitle: 'Go easy or skip that group',
+  backOff: [
+    'Sharp, stabbing, or joint pain; swelling or bruising; pain that gets worse during warm-up sets.',
+    'Clear drop in strength or range vs your last session on that movement — not just “heavy legs.”',
+    'Whole-body crash (bad sleep + wiped out) — rest or a lighter day, not a PR attempt on sore muscles.',
+  ],
+  appNote:
+    'You always choose upper, lower, or full — split suggestions from your last session are hints only. “I’m sick” on home excuses Main; other habits still count.',
 } as const;
