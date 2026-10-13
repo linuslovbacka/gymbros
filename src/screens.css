@@ -658,6 +658,7 @@
   min-height: 0;
 }
 .daily-check.readonly { cursor: default; opacity: 0.92; }
+.daily-check.is-nav { cursor: pointer; text-align: left; width: 100%; }
 .daily-check-mark { flex-shrink: 0; width: 1.25rem; text-align: center; font-weight: 700; }
 .daily-check-label { flex: 1; min-width: 0; }
 .daily-check-sub {
@@ -1164,11 +1165,8 @@
   box-shadow: var(--shadow-card);
   font-size: 10px;
 }
-.week-strip-day.is-today {
-  box-shadow: inset 0 0 0 2px var(--accent);
-}
 .week-strip-day.is-sick {
-  background: rgba(255, 77, 36, 0.08);
+  box-shadow: inset 0 0 0 1.5px var(--line-bright);
 }
 .week-strip-short {
   font-family: var(--font-display);
@@ -1191,12 +1189,21 @@
   display: block;
   height: 100%;
   border-radius: 999px;
-  background: var(--text);
+  background: var(--line-bright);
   min-width: 0;
   transition: width 0.25s ease;
 }
-.week-strip-day.is-sick .week-strip-score-fill {
+.week-strip-day.is-today .week-strip-score-fill {
   background: var(--accent);
+}
+.week-strip-day.is-past-trained .week-strip-score-fill {
+  background: var(--text);
+}
+.week-strip-day.is-no-train .week-strip-score-fill {
+  background: var(--line-bright);
+}
+.week-strip-day.is-sick:not(.is-today) .week-strip-score-fill {
+  background: var(--line-bright);
 }
 .week-strip-pct {
   font-size: 9px;
@@ -1268,30 +1275,29 @@
   margin-left: 3px;
   box-shadow: -2px 0 0 0 var(--line);
 }
-.habit-timeline-cell.is-today {
-  box-shadow: inset 0 0 0 1.5px var(--text);
-}
-.habit-timeline-cell.is-sick::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 3px;
-  bottom: 3px;
-  width: 2px;
-  transform: translateX(-50%);
-  border-radius: 1px;
-  background: var(--accent);
-  pointer-events: none;
-  z-index: 1;
+.habit-timeline-cell.is-sick {
+  box-shadow: inset 0 0 0 1.5px var(--line-bright);
 }
 .habit-timeline-fill {
   position: relative;
   z-index: 0;
   width: 100%;
   border-radius: 2px 2px 1px 1px;
-  background: var(--text);
+  background: var(--line-bright);
   min-height: 0;
   transition: height 0.2s ease;
+}
+.habit-timeline-cell.is-today .habit-timeline-fill {
+  background: var(--accent);
+}
+.habit-timeline-cell.is-past-trained .habit-timeline-fill {
+  background: var(--text);
+}
+.habit-timeline-cell.is-no-train .habit-timeline-fill {
+  background: var(--line-bright);
+}
+.habit-timeline-cell.is-sick:not(.is-today) .habit-timeline-fill {
+  background: var(--line-bright);
 }
 .habit-timeline-cell.is-empty {
   opacity: 0.55;
@@ -1300,6 +1306,1006 @@
   font-size: 11px;
   line-height: 1.4;
   margin: 8px 0 0;
+}
+
+/* LL PLAY home — centered today bar */
+.habit-timeline-wrap.is-llplay {
+  width: 100%;
+  margin: 0;
+}
+.habit-timeline-wrap.is-llplay .habit-timeline-scroll {
+  height: 48px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: 0;
+  scroll-behavior: auto;
+  scrollbar-width: none;
+  touch-action: pan-x;
+  cursor: grab;
+}
+.habit-timeline-wrap.is-llplay .habit-timeline-scroll:active {
+  cursor: grabbing;
+}
+.habit-timeline-wrap.is-llplay .habit-timeline-scroll::-webkit-scrollbar {
+  display: none;
+  height: 0;
+}
+.habit-timeline-wrap.is-llplay .habit-timeline {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 48px;
+  min-width: max-content;
+  padding: 0 2px;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  will-change: transform;
+}
+/* Lets today’s bar sit in the horizontal center (Figma Frame 33 x: -21) */
+.habit-timeline-wrap.is-llplay.is-center-today .habit-timeline {
+  padding-left: calc(50% - 1px);
+  padding-right: calc(50% - 1px);
+}
+.habit-timeline-wrap.is-llplay .habit-timeline-cell {
+  flex: 0 0 2px;
+  width: 2px;
+  max-width: 2px;
+  min-width: 2px;
+  height: 48px;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+.habit-timeline-wrap.is-llplay .habit-timeline-cell.week-start {
+  margin-left: 0;
+  box-shadow: none;
+}
+.habit-timeline-wrap.is-llplay .habit-timeline-cell.is-sick {
+  box-shadow: none;
+}
+.habit-timeline-wrap.is-llplay .habit-timeline-cell.is-empty {
+  opacity: 1;
+}
+.habit-timeline-wrap.is-llplay .habit-timeline-fill {
+  width: 2px;
+  border-radius: 1px;
+}
+/* LL PLAY: trained = brightest; habits-only = mid grey (training reads first on black LCD) */
+.habit-timeline-wrap.is-llplay .habit-timeline-cell.is-past-trained .habit-timeline-fill {
+  background: #ffffff;
+}
+.habit-timeline-wrap.is-llplay .habit-timeline-cell.is-no-train .habit-timeline-fill {
+  background: #444444;
+}
+.habit-timeline-wrap.is-llplay .habit-timeline-cell.is-today .habit-timeline-fill {
+  background: var(--accent);
+}
+/* Sick: #444 rounded stroke on the fill (height still = habit score) */
+.habit-timeline-wrap.is-llplay .habit-timeline-cell.is-sick .habit-timeline-fill {
+  box-shadow: inset 0 0 0 1px #444444;
+  border-radius: 999px;
+}
+.habit-timeline-wrap.is-llplay .habit-timeline-cell.is-sick.is-no-train .habit-timeline-fill {
+  background: #333333;
+}
+
+/* LL PLAY home LCD content */
+.llplay-home__logo {
+  margin: 0 auto 0;
+  flex-shrink: 0;
+}
+.llplay-home__days {
+  margin: 0 0 8px;
+  font-size: 20px;
+  line-height: 1;
+  font-weight: 400;
+  text-align: center;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+.habit-timeline-wrap.is-llplay {
+  flex-shrink: 0;
+}
+
+.llplay-home__scroll-body {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  min-height: min-content;
+  padding-bottom: 32px;
+  will-change: transform;
+}
+
+.daily-checks.is-llplay {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin: 8px 0 0;
+  padding: 0 0 16px;
+  gap: 0;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+}
+.daily-checks.is-llplay .daily-checks-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+.daily-checks.is-llplay .daily-checks-stack-item {
+  width: 100%;
+}
+
+/* Figma 1905:4168 — standard habit pill */
+.daily-checks.is-llplay .daily-check--llplay-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 0;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 40px;
+  background: #ffffff;
+  color: #000000;
+  box-shadow: none;
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--font-llplay), 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+.daily-checks.is-llplay .daily-check--llplay-pill.readonly:not(.is-nav) {
+  cursor: default;
+}
+.daily-check-llplay-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.daily-check-llplay-dot {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid #000000;
+  box-sizing: border-box;
+  background: transparent;
+}
+.daily-checks.is-llplay .daily-check--llplay-pill.done .daily-check-llplay-dot {
+  background: #000000;
+}
+.daily-checks.is-llplay .daily-check--llplay-pill .daily-check-label {
+  flex: 0 1 auto;
+  font-size: 24px;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1.1;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+.daily-checks.is-llplay .daily-check--llplay-pill .daily-check-sub {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 500;
+  font-style: normal;
+  line-height: 1.2;
+  color: #000000;
+  opacity: 1;
+  text-align: right;
+  max-width: 45%;
+}
+
+/* Figma 1905:4151 — protein card */
+.protein-log--llplay {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 8px 16px;
+  border-radius: 40px;
+  background: #ffffff;
+  color: #000000;
+  box-sizing: border-box;
+  font-family: var(--font-llplay), 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+.protein-llplay-dot {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+.protein-llplay-dot--open {
+  border-radius: 50%;
+  background: #ff0000;
+  box-sizing: border-box;
+}
+.protein-log--llplay .daily-check-llplay-dot {
+  flex-shrink: 0;
+}
+.protein-llplay-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.protein-llplay-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+.protein-llplay-title {
+  font-size: 24px;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+.protein-llplay-nums {
+  margin: 0;
+  flex-shrink: 0;
+  font-size: 24px;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+.protein-llplay-logged.is-below-goal {
+  color: #ff0000;
+}
+.protein-llplay-target {
+  color: #000000;
+}
+.protein-llplay-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+}
+.protein-llplay-quick-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 4px;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+.protein-llplay-chip {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  border: 1px solid #000000;
+  border-radius: 40px;
+  background: #ffffff;
+  color: #000000;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.protein-llplay-custom {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  flex-shrink: 0;
+  margin-left: auto;
+  gap: 8px;
+  padding: 1px 1px 1px 8px;
+  border: 1px solid #000000;
+  border-radius: 40px;
+  background: #ffffff;
+  min-width: max-content;
+}
+.protein-llplay-custom-field {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 0;
+  margin: 0;
+  padding: 3px 0;
+  min-width: 0;
+}
+.protein-llplay-input-prefix {
+  font-size: 16px;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: #000000;
+}
+.protein-llplay-input {
+  width: 3ch;
+  min-width: 2ch;
+  max-width: 4ch;
+  border: none;
+  background: transparent;
+  color: #000000;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1.2;
+  text-transform: uppercase;
+  outline: none;
+  padding: 0;
+}
+.protein-llplay-input::placeholder {
+  color: rgba(0, 0, 0, 0.35);
+}
+.protein-llplay-add {
+  flex: 0 0 auto;
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border: none;
+  border-radius: 40px;
+  margin: 0;
+  background: #000000;
+  color: #ffffff;
+  white-space: nowrap;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1.2;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.daily-checks.is-llplay .daily-checks-partner {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.llplay-home [data-llplay-card]:focus-visible,
+.llplay-home .llplay-card:focus-visible {
+  outline: 2px solid #ff4d24;
+  outline-offset: 3px;
+}
+.llplay-home [data-llplay-card]:focus:not(:focus-visible) {
+  outline: none;
+}
+/* Figma 1908:5723 — sick card (centered pill, always last in list) */
+.llplay-sick-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 100%;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 40px;
+  background: #ffffff;
+  color: #000000;
+  box-shadow: none;
+  font-family: var(--font-llplay), 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  font-style: italic;
+  line-height: normal;
+  text-transform: uppercase;
+  text-align: center;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.llplay-sick-row.is-on {
+  background: #000000;
+  color: #ffffff;
+}
+
+/* Figma 1905:4333 — train menu choice pills */
+.llplay-choice-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 40px;
+  background: #ffffff;
+  color: #000000;
+  box-shadow: none;
+  text-align: center;
+  cursor: pointer;
+  font-family: var(--font-llplay), 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+.llplay-choice-pill:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.llplay-choice-pill__label {
+  font-size: 24px;
+  font-weight: 700;
+  font-style: italic;
+  line-height: normal;
+  text-transform: uppercase;
+}
+.llplay-choice-pill__sub {
+  font-size: 12px;
+  font-weight: 500;
+  font-style: normal;
+  line-height: normal;
+  color: #000000;
+}
+.llplay-workout__choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+.llplay-workout__body {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  min-height: min-content;
+  flex: 1;
+}
+.llplay-workout__body--centered {
+  min-height: 100%;
+}
+.llplay-workout__center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0 0 16px;
+}
+.llplay-workout__scroll-body {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  min-height: min-content;
+  padding: 0 0 24px;
+  will-change: transform;
+}
+.llplay-workout__logo {
+  margin-bottom: 12px;
+}
+.llplay-workout-meta {
+  margin: 0 0 12px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.72);
+  text-align: center;
+}
+.llplay-workout-intro {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.85);
+  text-align: center;
+}
+.llplay-workout__btn-secondary {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 40px;
+  background: transparent;
+  color: #ffffff;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  width: 100%;
+}
+.llplay-workout-plan {
+  margin-top: 16px;
+  color: #ffffff;
+  text-align: left;
+}
+.llplay-workout-plan .section-title,
+.llplay-workout-plan .muted,
+.llplay-workout-plan .schedule-list {
+  color: rgba(255, 255, 255, 0.88);
+}
+.llplay-workout-log {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 8px 0 16px;
+  color: #ffffff;
+  text-align: left;
+}
+.llplay-workout-log .exercise-card,
+.llplay-workout-log .conditioning-guide {
+  color: inherit;
+}
+.llplay-workout-log .exercise-name,
+.llplay-workout-log .conditioning-guide-title {
+  color: #ffffff;
+}
+.llplay-workout-log .muted,
+.llplay-workout-log .exercise-prescription,
+.llplay-workout-log .exercise-rung {
+  color: rgba(255, 255, 255, 0.78);
+}
+.llplay-workout-log .btn {
+  border-color: rgba(255, 255, 255, 0.35);
+}
+.llplay-workout-log-title {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+/* LL PLAY details (Diet + Schedule tabs) — Figma 1892:1219 / 1909:5726 */
+.llplay-details-chrome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 0 0 4px;
+}
+
+.llplay-details-home-logo {
+  width: 79px;
+  height: 79px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.llplay-details-home-logo img {
+  display: block;
+  width: 79px;
+  height: 79px;
+}
+
+.llplay-details-segment-wrap {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.llplay-details-segment {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid #ffffff;
+  border-radius: 40px;
+  background: #000000;
+  box-sizing: border-box;
+}
+
+.llplay-details-segment-btn {
+  margin: 0;
+  padding: 16px;
+  border: none;
+  border-radius: 64px;
+  background: #000000;
+  color: #ffffff;
+  font-family: var(--font-llplay), 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  font-style: italic;
+  font-size: 16px;
+  line-height: normal;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.llplay-details-segment-btn.is-active {
+  background: #ffffff;
+  color: #000000;
+}
+
+.llplay-details-scroll-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  width: 100%;
+  padding: 0 16px 16px;
+  box-sizing: border-box;
+}
+
+.llplay-details-pane {
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.llplay-details-pane .section-title,
+.llplay-details-pane .diet-card-title {
+  color: #ffffff;
+}
+
+.llplay-details-pane .muted,
+.llplay-details-pane .tiny {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.llplay-details-pane .btn,
+.llplay-details-pane .diet-mode-btn {
+  font-size: 14px;
+}
+
+.llplay-details-general {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 4px;
+}
+
+.llplay-details-general-title {
+  margin: 0;
+  font-family: var(--font-llplay), 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  font-style: italic;
+  font-size: 24px;
+  line-height: normal;
+  text-transform: uppercase;
+  text-align: center;
+  color: #ffffff;
+}
+
+.llplay-details-general {
+  width: 100%;
+}
+
+.llplay-details-general-lead {
+  margin: 0;
+  font-family: var(--font-llplay), 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: normal;
+  color: #ffffff;
+  text-align: center;
+}
+
+.llplay-details-general-meta {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.llplay-details-card {
+  background: #ffffff;
+  color: #000000;
+  border-radius: 40px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.llplay-details-card-title {
+  margin: 0;
+  font-family: var(--font-llplay), 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  font-style: italic;
+  font-size: 24px;
+  line-height: normal;
+  text-transform: uppercase;
+  text-align: center;
+  color: #000000;
+}
+
+.llplay-details-card-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  text-align: center;
+}
+
+.llplay-details-card-intro-lead {
+  margin: 0;
+  font-family: var(--font-llplay), 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: normal;
+  color: #000000;
+}
+
+.llplay-details-card-intro-lead--center {
+  text-align: center;
+}
+
+.llplay-details-card-lead {
+  margin: 0;
+  font-family: var(--font-llplay), 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: normal;
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.llplay-details-performance {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+}
+
+.llplay-details-performance-btn {
+  width: 100%;
+  min-height: 52px;
+  margin: 0;
+  padding: 16px;
+  border: none;
+  border-radius: 40px;
+  background: #ffffff;
+  color: #000000;
+  font-family: var(--font-llplay), 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  font-style: italic;
+  font-size: 16px;
+  line-height: normal;
+  text-transform: uppercase;
+  text-align: center;
+  cursor: pointer;
+}
+
+.llplay-details-performance-btn.is-on {
+  background: #000000;
+  color: #ffffff;
+  outline: 1px solid #ffffff;
+}
+
+.llplay-details-performance-hint {
+  margin: 0;
+  font-family: var(--font-llplay), 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: normal;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.llplay-details-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.llplay-details-row-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.llplay-details-row-split {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.llplay-details-row-split--creatine {
+  margin-bottom: 0;
+}
+
+.llplay-details-row-title {
+  margin: 0;
+  font-family: var(--font-llplay), 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  font-style: italic;
+  font-size: 20px;
+  line-height: normal;
+  text-transform: uppercase;
+  color: #000000;
+}
+
+.llplay-details-row-sub {
+  margin: 0;
+  font-family: var(--font-llplay), 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: normal;
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.llplay-details-prose {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.llplay-details-row-detail {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+  color: rgba(0, 0, 0, 0.72);
+}
+
+.llplay-details-divider {
+  height: 1px;
+  margin: 0;
+  border: none;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.llplay-details-pill {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.08);
+  color: #000000;
+}
+
+.llplay-details-pill.is-done {
+  background: #000000;
+  color: #ffffff;
+}
+
+.llplay-details-mode-toggle {
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.08);
+  color: #000000;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+}
+
+.llplay-details-mode-toggle.is-on {
+  background: #000000;
+  color: #ffffff;
+}
+
+.llplay-details-metric-edit {
+  flex-shrink: 0;
+  padding: 16px;
+  border: none;
+  border-radius: 40px;
+  background: #000000;
+  color: #ffffff;
+  font-family: var(--font-llplay), 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  font-style: italic;
+  font-size: 16px;
+  line-height: normal;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.llplay-details-metrics .diet-metrics-saved-pill,
+.llplay-details-metrics .diet-metrics-saved-row {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 0;
+  width: 100%;
+  border: 1px solid #000000;
+  border-radius: 40px;
+  overflow: hidden;
+}
+
+.llplay-details-metrics .diet-metrics-saved-text {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 8px;
+  font-family: var(--font-llplay), 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  font-style: italic;
+  font-size: 20px;
+  line-height: normal;
+  text-transform: uppercase;
+  color: #000000;
+}
+
+.llplay-details-metrics .diet-metrics-stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.llplay-details-metrics .diet-metrics-stat-label,
+.llplay-details-metrics .diet-metrics-stat-value {
+  font-family: var(--font-llplay), 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  font-style: italic;
+  font-size: 20px;
+  line-height: normal;
+  text-transform: uppercase;
+  color: #000000;
+}
+
+.llplay-details-metrics .diet-metrics-card {
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  padding-top: 12px;
+  margin-top: 4px;
+}
+
+.llplay-details-metrics .diet-metrics-card-sub {
+  margin: 0;
+  font-family: var(--font-llplay), 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: normal;
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.llplay-details-metrics .diet-metrics-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.llplay-details-metrics .diet-metrics-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  font: inherit;
+  font-size: 14px;
+}
+
+.llplay-details-link-btn {
+  align-self: flex-start;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #000000;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.llplay-details-foot {
+  margin: 0;
+  padding: 0 4px 4px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.llplay-details-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(0, 0, 0, 0.72);
+}
+
+.llplay-details-schedule-note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.72);
 }
 
 .superset-round-label {
@@ -1452,3 +2458,1219 @@
 }
 .schedule-block h3 { font-size: 15px; margin: 0 0 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .topbar-title { font-family: var(--font-display); letter-spacing: 0.08em; flex: 1; text-align: center; }
+
+/* ─── LL PLAY loading (1903:7735) ─────────────────────────────────────────── */
+html.auth-llplay-loading-active,
+html.auth-llplay-loading-active body,
+html.auth-llplay-loading-active body > div {
+  background: transparent !important;
+  background-image: none !important;
+}
+
+html.auth-llplay-loading-active .auth-llplay-root {
+  background: transparent !important;
+}
+
+/* Portaled to document.body — transparent so slide reveals page underneath */
+.auth-llplay-loading-portal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  overflow: hidden;
+  pointer-events: none;
+  background: transparent;
+}
+
+.auth-llplay-loading__slide {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+  backface-visibility: hidden;
+  pointer-events: auto;
+}
+
+.auth-llplay-loading--gate {
+  min-height: 100dvh;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  background: #ffffff;
+}
+
+/* Legacy static loader (LoadingGate llplay without gate) */
+.auth-llplay-loading {
+  min-height: 100dvh;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  background: #000000;
+}
+
+.auth-llplay-loading__panel {
+  position: relative;
+  width: min(100%, 402px);
+  min-height: 100dvh;
+  margin: 0 auto;
+  background: #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-llplay-loading__logo {
+  width: 79px;
+  height: 79px;
+  flex-shrink: 0;
+}
+
+.auth-llplay-loading__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ─── LL PLAY login (Game Boy shell) ─────────────────────────────────────── */
+body:has(.auth-llplay-root) {
+  background: #ffffff;
+  background-image: none;
+}
+
+.auth-llplay-root {
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+  background: #ffffff;
+  font-family: var(--font-llplay), 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.auth-llplay-root input,
+.auth-llplay-root button,
+.auth-llplay-root textarea {
+  font-family: inherit;
+  font-style: inherit;
+}
+
+.auth-llplay {
+  width: min(100%, 402px);
+  min-height: 100dvh;
+  padding: 0 0 max(12px, env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.auth-llplay:has(.auth-llplay__screen--log-tween),
+.auth-llplay:has(.auth-llplay__screen--log-live) {
+  overflow: visible;
+  padding-bottom: 0;
+}
+
+.auth-llplay-root:has(.auth-llplay__screen--log-live),
+.auth-llplay:has(.auth-llplay__screen--log-live) {
+  background: #000000;
+}
+
+.auth-llplay__session-dot {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  z-index: 4;
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #000000;
+  cursor: default;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+.auth-llplay__session-dot.is-active {
+  background: #ff0000;
+  cursor: pointer;
+}
+.auth-llplay__session-dot:disabled {
+  opacity: 1;
+}
+
+.auth-llplay__device {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  overflow: visible;
+}
+
+/* Details: LCD hugs content and pushes controls down (no leftover gap). */
+.auth-llplay__device--details-expand {
+  min-height: 0;
+}
+
+.auth-llplay__device--details-expand .auth-llplay__top {
+  flex: 0 0 auto;
+}
+
+.auth-llplay__device--details-expand .auth-llplay__controls {
+  margin-top: 0;
+}
+
+.auth-llplay__top {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 0;
+  padding: 24px;
+  overflow: visible;
+}
+
+.auth-llplay__sticker {
+  position: absolute;
+  right: clamp(8px, 5vw, 24px);
+  top: clamp(0px, 2vw, 12px);
+  width: clamp(100px, 36vw, 145px);
+  height: auto;
+  pointer-events: none;
+  z-index: 2;
+  transform: rotate(-32deg);
+  background: transparent;
+}
+
+/* Figma frame 874px tall: LCD ~581px, controls ~257px (617 + 257) */
+.auth-llplay__screen {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  background: #000000;
+  border-radius: clamp(32px, 14vw, 56px);
+  width: min(100%, 354px);
+  margin: 0 auto;
+  height: min(
+    581px,
+    calc(100dvh * 581 / 874),
+    calc(100dvh - 257px - 48px)
+  );
+  min-height: min(420px, calc(100dvh * 481 / 874));
+  max-height: 581px;
+  overflow: hidden;
+}
+
+/* Details expanded LCD — Figma 1892:235 black bezel 826px, 24px top inset */
+.auth-llplay__screen--expanded {
+  height: min(826px, calc(100dvh - 48px));
+  max-height: min(826px, calc(100dvh - 48px));
+}
+
+/* Workout log enter: GSAP pins the LCD `position:fixed` over the shell. */
+.auth-llplay__screen--log-tween {
+  z-index: 8;
+  overflow: visible;
+  max-height: none;
+  min-height: 0;
+}
+
+/* After scale-out: fill the device, no white GameBoy padding. */
+.auth-llplay__screen.auth-llplay__screen--log-live {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 8;
+  width: min(100%, 402px);
+  height: 100dvh;
+  min-height: 0;
+  max-height: none;
+  margin: 0;
+  border-radius: 0;
+  padding: 8px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.auth-llplay__device:has(.auth-llplay__screen--log-live) .auth-llplay__top {
+  position: static;
+  padding: 0;
+}
+
+.auth-llplay__device:has(.auth-llplay__screen--log-tween) .auth-llplay__sticker,
+.auth-llplay__device:has(.auth-llplay__screen--log-tween) .auth-llplay__controls,
+.auth-llplay__device:has(.auth-llplay__screen--log-live) .auth-llplay__sticker,
+.auth-llplay__device:has(.auth-llplay__screen--log-live) .auth-llplay__controls,
+.auth-llplay__device:has(.auth-llplay__screen--log-tween) .auth-llplay__logotype-btn,
+.auth-llplay__device:has(.auth-llplay__screen--log-live) .auth-llplay__logotype-btn,
+.auth-llplay__device:has(.auth-llplay__screen--log-live) .auth-llplay__logotype {
+  pointer-events: none;
+}
+
+.auth-llplay__device:has(.auth-llplay__screen--log-live) .auth-llplay__sticker {
+  visibility: hidden;
+}
+
+.auth-llplay__device:has(.auth-llplay__screen--log-live) .auth-llplay__controls {
+  visibility: hidden;
+  height: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+}
+
+.auth-llplay__screen--log-live .auth-llplay__logotype-btn,
+.auth-llplay__screen--log-live .auth-llplay__logotype {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.auth-llplay__device:has(.auth-llplay__screen--log-live) .auth-llplay__session-dot {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Figma 1905:3367 — Frame 28 sits in 8px inset; 48px bottom band for logotype (525 + 8 + 48 = 581) */
+.auth-llplay__screen:has(.llplay-home),
+.auth-llplay__screen:has(.llplay-details),
+.auth-llplay__screen:has(.llplay-workout):not(.auth-llplay__screen--log-live) {
+  box-sizing: border-box;
+  padding: 8px 8px 48px;
+}
+
+.auth-llplay__screen.auth-llplay__screen--log-live {
+  padding: 8px;
+}
+
+.auth-llplay__screen-inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px clamp(14px, 4vw, 20px) clamp(48px, 10vw, 56px);
+  min-height: 0;
+  color: #ffffff;
+  flex: 1;
+}
+
+.llplay-lcd-layers {
+  position: relative;
+  flex: 1 1 auto;
+  align-self: stretch;
+  width: 100%;
+  min-height: 0;
+}
+
+.llplay-lcd-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.llplay-lcd-layer.is-front {
+  pointer-events: auto;
+}
+
+/* Home + details: scroll lives in Frame 28 (1905:3369) — 38px corner radius */
+.auth-llplay__screen-inner.llplay-home,
+.auth-llplay__screen-inner.llplay-workout,
+.auth-llplay__screen-inner.llplay-details {
+  align-items: stretch;
+  align-self: stretch;
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 100%;
+  box-sizing: border-box;
+  border-radius: 38px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: none;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.auth-llplay__screen-inner.llplay-home::-webkit-scrollbar,
+.auth-llplay__screen-inner.llplay-workout::-webkit-scrollbar,
+.auth-llplay__screen-inner.llplay-details::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+.auth-llplay__screen-inner.llplay-workout--log {
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-llplay__logo {
+  width: 79px;
+  height: 79px;
+  margin: 0 auto 18px;
+  flex-shrink: 0;
+}
+
+/* Figma 1902:7621 — Helvetica Neue Bold Italic, 28px, 310×102 hug */
+.auth-llplay__tagline {
+  font-family: var(--font-llplay), 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  font-style: italic;
+  font-size: 28px;
+  line-height: normal;
+  letter-spacing: normal;
+  text-align: center;
+  text-transform: uppercase;
+  margin: 0 0 18px;
+  width: min(100%, 310px);
+}
+
+.auth-llplay__form {
+  width: 100%;
+  max-width: 321px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.auth-llplay__form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.auth-llplay__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+/* Sign in label, forgot link, sign-up toggle — same size (Figma body copy) */
+.auth-llplay-root .auth-llplay__form-label,
+.auth-llplay-root .auth-llplay__link,
+.auth-llplay-root .auth-llplay__toggle {
+  font-size: 12px;
+  line-height: normal;
+  font-weight: 400;
+}
+
+.auth-llplay-root .auth-llplay__form-label {
+  margin: 0;
+}
+
+.auth-llplay-root .auth-llplay__submit {
+  font-size: 12px;
+  line-height: normal;
+}
+
+.auth-llplay__field {
+  width: 100%;
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: #ffffff;
+  color: #000000;
+  font-size: 12px;
+  font-weight: 400;
+  outline: none;
+}
+
+.auth-llplay__field:focus {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
+}
+
+.auth-llplay__link {
+  align-self: flex-end;
+  margin: 0;
+  padding: 4px 0;
+  border: none;
+  background: none;
+  color: #ffffff;
+  text-align: right;
+  cursor: pointer;
+}
+
+.auth-llplay__submit {
+  width: 100%;
+  margin: 0;
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: #ffffff;
+  color: #000000;
+  font-weight: 700;
+  font-style: normal;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.auth-llplay__submit:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.auth-llplay__toggle {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+}
+
+.auth-llplay__logotype-btn {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(calc(-50% - 0.14px));
+  z-index: 2;
+  margin: 0;
+  padding: 4px 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.auth-llplay__logotype {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(calc(-50% - 0.14px));
+  width: min(143.728px, 38vw);
+  height: auto;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.auth-llplay__logotype-btn .auth-llplay__logotype {
+  position: static;
+  transform: none;
+  display: block;
+  pointer-events: none;
+}
+
+.auth-llplay__error {
+  margin: 0;
+  font-size: 12px;
+  color: #ff8a80;
+}
+
+.auth-llplay__info {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.auth-llplay__controls {
+  position: relative;
+  flex: 0 0 auto;
+  width: 100%;
+  margin-top: auto;
+  padding: 0 0 clamp(28px, 10vw, 48px);
+  overflow: visible;
+}
+
+/* Figma Controls frame: 402×257 — positions scale with stage width */
+.auth-llplay__controls-stage {
+  position: relative;
+  width: 100%;
+  max-width: 402px;
+  margin: 0 auto;
+  aspect-ratio: 402 / 257;
+  overflow: visible;
+}
+
+.auth-llplay__vs-anchor {
+  position: absolute;
+  top: 0;
+  left: calc(50% + 1px);
+  transform: translateX(-50%);
+  z-index: 3;
+}
+
+.auth-llplay__vs {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: #000;
+  color: #fff;
+  font-family: inherit;
+  font-size: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.auth-llplay__controls-center {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.auth-llplay__deco {
+  position: absolute;
+  height: auto;
+  pointer-events: none;
+}
+
+/* Group22 — handstand on FWD (Button group, Figma 101×41 @ 38×48) */
+.auth-llplay__deco--handstand {
+  left: 25.12%;
+  top: 15.95%;
+  width: 9.45%;
+  height: 18.68%;
+  object-fit: contain;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* decor 3 — flex cat above Start/Details (Group24 / decor-hero, mirrored) */
+.auth-llplay__deco--hero {
+  left: 38.56%;
+  top: 19.84%;
+  width: 27.11%;
+  z-index: 1;
+  transform: scaleX(-1);
+}
+
+.auth-llplay__deco--cat {
+  left: 8.71%;
+  bottom: 0;
+  width: 15.67%;
+  z-index: 2;
+}
+
+/* decor 4 — kettlebell, hangs below frame */
+.auth-llplay__deco--kettlebell {
+  right: 0;
+  bottom: -14.79%;
+  width: 37.81%;
+  z-index: 2;
+}
+
+.auth-llplay__dpad-wrap {
+  position: absolute;
+  left: 6.22%;
+  top: 15.18%;
+  width: 29.85%;
+  aspect-ratio: 1;
+  z-index: 2;
+}
+
+.auth-llplay__dpad-hit {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+  z-index: 4;
+}
+
+.auth-llplay__pad {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 8px;
+  touch-action: manipulation;
+  overflow: visible;
+}
+
+.auth-llplay__pad--up {
+  grid-column: 2;
+  grid-row: 1;
+  transform-origin: 50% 100%;
+}
+
+.auth-llplay__pad--down {
+  grid-column: 2;
+  grid-row: 3;
+  transform-origin: 50% 0%;
+}
+
+.auth-llplay__pad--left {
+  grid-column: 1;
+  grid-row: 2;
+  transform-origin: 100% 50%;
+}
+
+.auth-llplay__pad--right {
+  grid-column: 3;
+  grid-row: 2;
+  transform-origin: 0% 50%;
+}
+
+/* Full dpad art aligned from each 1/3 hit cell */
+.auth-llplay__pad-graphic {
+  position: absolute;
+  width: 300%;
+  height: 300%;
+  pointer-events: none;
+}
+
+.auth-llplay__pad--up .auth-llplay__pad-graphic {
+  left: -100%;
+  top: 0;
+}
+
+.auth-llplay__pad--down .auth-llplay__pad-graphic {
+  left: -100%;
+  top: -200%;
+}
+
+.auth-llplay__pad--left .auth-llplay__pad-graphic {
+  left: 0;
+  top: -100%;
+}
+
+.auth-llplay__pad--right .auth-llplay__pad-graphic {
+  left: -200%;
+  top: -100%;
+}
+
+.auth-llplay__action {
+  position: absolute;
+  border: none;
+  margin: 0;
+  padding: 0;
+  background: #000000;
+  cursor: pointer;
+  width: 13.93%; /* 56px @ 402 */
+  aspect-ratio: 1;
+  border-radius: 50%;
+  overflow: visible;
+  z-index: 5;
+  box-sizing: border-box;
+}
+
+.auth-llplay__action img {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+/* Confirm button (1890:2338) — icon 43.246×24.551 in 56 circle, 4px pad */
+.auth-llplay__action--enter {
+  left: 80.35%;
+  top: 20.62%;
+}
+
+.auth-llplay__action--enter img {
+  width: 77.24%;
+  height: auto;
+}
+
+/* Back button (1890:2361) — icon 37.15×33.823 in 56 circle */
+.auth-llplay__action--back {
+  left: 72.64%;
+  top: 42.41%;
+}
+
+.auth-llplay__action--back img {
+  width: 66.34%;
+  height: auto;
+}
+
+.auth-llplay__pills-deferred {
+  position: absolute;
+  top: 72.76%;
+  left: calc(50% + 1px);
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  opacity: 1;
+  z-index: 2;
+  pointer-events: auto;
+}
+
+.auth-llplay__pill {
+  margin: 0;
+  border: none;
+  background: #000;
+  color: #fff;
+  font-family: inherit;
+  font-size: 12px;
+  padding: 8px 13px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.auth-llplay__pressable {
+  transform-origin: center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .auth-llplay__pressable:active {
+    transform: scale(0.93);
+  }
+
+}
+
+.auth-llplay__field:focus-visible,
+.auth-llplay__submit:focus-visible,
+.auth-llplay__link:focus-visible,
+.auth-llplay__toggle:focus-visible,
+.auth-llplay__pad:focus-visible,
+.auth-llplay__action:focus-visible,
+.auth-llplay__vs:focus-visible,
+.auth-llplay__pill:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.9);
+  outline-offset: 2px;
+}
+
+/* LL PLAY exercise log — Figma 1897 / 1878 / 1889 */
+.llplay-exlog {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  color: #000000;
+  padding-bottom: 4px;
+}
+.llplay-exlog__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  background: #000000;
+  border-radius: 40px;
+  padding: 12px 16px;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+.llplay-exlog--warmup .llplay-exlog__header {
+  align-items: center;
+  background: #191919;
+  padding: 16px;
+  min-height: 112px;
+}
+.llplay-exlog--warmup .llplay-exlog__clock {
+  font-size: clamp(36px, 11vw, 64px);
+}
+.llplay-exlog__back {
+  border: 0;
+  background: transparent;
+  color: #ffffff;
+  font-family: var(--font-llplay), 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+}
+.llplay-exlog__clock-wrap {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex: 1;
+}
+.llplay-exlog__clock-label {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+}
+.llplay-exlog__clock {
+  margin: 0;
+  font-family: var(--font-llplay), 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: clamp(40px, 12vw, 80px);
+  font-weight: 400;
+  line-height: 1;
+  color: #ffffff;
+}
+.llplay-exlog__clock--short {
+  font-size: clamp(48px, 14vw, 80px);
+}
+.llplay-exlog-flip {
+  display: block;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: #ffffff;
+  border-radius: 40px;
+  perspective: 1200px;
+  cursor: pointer;
+  color: inherit;
+  text-align: center;
+  flex-shrink: 0;
+}
+.llplay-exlog-flip__inner {
+  position: relative;
+  display: block;
+  width: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.llplay-exlog-flip.is-flipped .llplay-exlog-flip__inner {
+  transform: rotateY(180deg);
+}
+.llplay-exlog-flip.is-instant .llplay-exlog-flip__inner {
+  transition: none;
+}
+.llplay-exlog-flip__face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  box-sizing: border-box;
+}
+.llplay-exlog-flip__face--front {
+  position: relative;
+  z-index: 1;
+}
+.llplay-exlog-flip__face--back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+}
+.llplay-exlog__media {
+  height: 301px;
+  flex: 1 1 180px;
+  min-height: 160px;
+  max-height: 301px;
+}
+.llplay-exlog--warmup .llplay-exlog__media {
+  flex: 1 1 auto;
+  height: 301px;
+}
+.llplay-exlog__media .llplay-exlog-flip__inner,
+.llplay-exlog__media .llplay-exlog-flip__face {
+  height: 100%;
+}
+.llplay-exlog__art {
+  width: min(263px, 72%);
+  height: auto;
+  object-fit: contain;
+}
+.llplay-exlog__badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-top: 4px;
+  border-radius: 400px;
+  background: #000000;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 500;
+}
+.llplay-exlog__badge--ghost {
+  background: #ffffff;
+  color: #000000;
+  border: 1px solid #000000;
+}
+.llplay-exlog__video {
+  width: calc(100% - 16px);
+  height: calc(100% - 48px);
+  border: 0;
+  border-radius: 32px;
+  margin-top: 8px;
+}
+.llplay-exlog__video-fallback {
+  color: #000000;
+  font-size: 16px;
+}
+.llplay-exlog__title {
+  min-height: 100px;
+  flex-shrink: 0;
+}
+.llplay-exlog__title .llplay-exlog-flip__inner {
+  min-height: 100px;
+}
+.llplay-exlog__title .llplay-exlog-flip__face {
+  padding: 16px 24px;
+  gap: 8px;
+  min-height: 100px;
+}
+.llplay-exlog__kicker {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+.llplay-exlog__name {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 500;
+}
+.llplay-exlog__hint {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: #d9d9d9;
+  white-space: pre-wrap;
+}
+.llplay-exlog__step {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  text-align: left;
+}
+.llplay-exlog__step-n {
+  font-size: 32px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+.llplay-exlog__step-t {
+  font-size: 16px;
+  font-weight: 500;
+  flex: 1;
+}
+.llplay-exlog__dots {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  padding: 8px 0 0;
+}
+.llplay-exlog__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #d9d9d9;
+}
+.llplay-exlog__dot.is-on {
+  background: #000000;
+}
+.llplay-exlog__reps {
+  display: flex;
+  gap: 9px;
+  width: 100%;
+  flex-shrink: 0;
+}
+.llplay-exlog__stepper,
+.llplay-exlog__count {
+  background: #ffffff;
+  border: 0;
+  border-radius: 40px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-llplay), 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  color: #000000;
+}
+.llplay-exlog__stepper {
+  width: 91px;
+  flex-shrink: 0;
+  font-size: 40px;
+  cursor: pointer;
+}
+.llplay-exlog__count {
+  flex: 1;
+  font-size: clamp(32px, 10vw, 52px);
+}
+.llplay-exlog__timer,
+.llplay-exlog__start,
+.llplay-exlog__next,
+.llplay-exlog__done {
+  width: 100%;
+  border: 0;
+  border-radius: 40px;
+  font-family: var(--font-llplay), 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+}
+.llplay-exlog__timer {
+  background: #ffffff;
+  color: #000000;
+  font-size: clamp(36px, 11vw, 52px);
+  min-height: 120px;
+  padding: 24px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: default;
+}
+.llplay-exlog__start {
+  background: #ffffff;
+  color: #000000;
+  font-size: 32px;
+  min-height: 120px;
+  padding: 24px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.llplay-exlog__next {
+  background: #000000;
+  color: #ffffff;
+  font-size: 22px;
+  padding: 16px;
+  flex: 0 0 auto;
+  min-height: 56px;
+  border-radius: 80px;
+}
+.llplay-exlog__last10 {
+  flex: 1 1 auto;
+  min-height: 220px;
+  width: 100%;
+  border: 0;
+  border-radius: 40px;
+  background: #ff0000;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-llplay), 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: clamp(72px, 22vw, 112px);
+  font-weight: 400;
+  line-height: 1;
+}
+.llplay-exlog__done {
+  flex: 1 1 auto;
+  min-height: 220px;
+  background: #ff0000;
+  color: #ffffff;
+  font-size: clamp(40px, 12vw, 64px);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  border-radius: 40px;
+}
+.llplay-cooldown-splash {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
+  color: #ffffff;
+  background: #000000;
+  cursor: pointer;
+  border: 0;
+  padding: 8px;
+  border-radius: 0;
+}
+.llplay-cooldown-splash__word {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  font-family: var(--font-llplay), 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: clamp(72px, 28vw, 112px);
+  font-weight: 700;
+  font-style: italic;
+  text-transform: uppercase;
+  line-height: 0.92;
+  letter-spacing: 0.02em;
+}
+.llplay-cooldown-splash__letter {
+  display: block;
+}
+.llplay-exlog__ceiling {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  z-index: 4;
+  background: #ffffff;
+  color: #000000;
+  border-radius: 24px;
+  padding: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.auth-llplay__screen-inner.llplay-workout--log {
+  padding: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  max-height: 100%;
+}
+
+/* LL PLAY done — Figma 1923:3078 / 3289 / 3360 */
+.llplay-done {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  color: #000000;
+}
+.llplay-done__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #191919;
+  border-radius: 40px;
+  padding: 16px;
+  min-height: 112px;
+  color: #ffffff;
+  flex-shrink: 0;
+  border: 0;
+  text-align: left;
+  width: 100%;
+}
+.llplay-done__header .llplay-exlog__clock {
+  font-size: clamp(36px, 11vw, 64px);
+}
+.llplay-done__prompt {
+  flex: 1 1 auto;
+  min-height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  border-radius: 40px;
+  background: #ffffff;
+  border: 0;
+  text-align: center;
+}
+.llplay-done__prompt-text {
+  margin: 0;
+  font-family: var(--font-llplay), 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: clamp(22px, 6.5vw, 28px);
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+.llplay-done__choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+  width: 100%;
+}
+.llplay-done__pill .llplay-choice-pill__label {
+  white-space: normal;
+  line-height: 1.15;
+}
+.llplay-done__pill--tall {
+  min-height: 77px;
+}

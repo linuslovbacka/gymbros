@@ -94,6 +94,37 @@ export function cooldownSections(
   return [MOBILITY_GUIDE.upper.cooldown, MOBILITY_GUIDE.lower.cooldown];
 }
 
+export interface CooldownStretch {
+  id: string;
+  name: string;
+  durationSec: number;
+  exerciseId: string;
+}
+
+const COOLDOWN_HOLD_SEC = 60;
+
+const UPPER_STRETCHES: CooldownStretch[] = [
+  { id: 'cd_cat_cow', name: 'Cat-cow → cobra hold', durationSec: COOLDOWN_HOLD_SEC, exerciseId: 'mobility_prep' },
+  { id: 'cd_thread', name: 'Thread the needle', durationSec: COOLDOWN_HOLD_SEC, exerciseId: 'mobility_prep' },
+  { id: 'cd_pigeon_u', name: 'Pigeon or figure-4', durationSec: COOLDOWN_HOLD_SEC, exerciseId: 'mobility_pigeon' },
+  { id: 'cd_wall_slides', name: 'Wall slides / shoulder CARs', durationSec: COOLDOWN_HOLD_SEC, exerciseId: 'mobility_prep' },
+  { id: 'cd_dead_bug', name: 'Dead bug or bird dog', durationSec: COOLDOWN_HOLD_SEC, exerciseId: 'mobility_prep' },
+];
+
+const LOWER_STRETCHES: CooldownStretch[] = [
+  { id: 'cd_hip_cars', name: 'Hip CARs', durationSec: COOLDOWN_HOLD_SEC, exerciseId: 'mobility_side_split' },
+  { id: 'cd_squat', name: 'Deep squat hold', durationSec: COOLDOWN_HOLD_SEC, exerciseId: 'mobility_prep' },
+  { id: 'cd_hamstring', name: 'Hamstring stretch', durationSec: COOLDOWN_HOLD_SEC, exerciseId: 'mobility_pike' },
+  { id: 'cd_pigeon_l', name: 'Figure-four / pigeon', durationSec: COOLDOWN_HOLD_SEC, exerciseId: 'mobility_pigeon' },
+  { id: 'cd_balance', name: 'Single-leg balance', durationSec: COOLDOWN_HOLD_SEC, exerciseId: 'mobility_prep' },
+];
+
+export function cooldownStretches(variant: CooldownVariant): CooldownStretch[] {
+  if (variant === 'upper') return UPPER_STRETCHES;
+  if (variant === 'lower') return LOWER_STRETCHES;
+  return [...UPPER_STRETCHES, ...LOWER_STRETCHES];
+}
+
 export function cooldownVariantForMain(
   kind: 'full' | 'split',
   splitDay: 'upper' | 'lower',

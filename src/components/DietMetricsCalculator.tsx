@@ -5,6 +5,9 @@ import {
   bmiCategory,
   bmiFromMetrics,
   PERFORMANCE_BULK_PROTEIN,
+  kcalBaseFromWeightKg,
+  kcalTargetKcal,
+  PERFORMANCE_BULK_KCAL_BONUS,
   PERFORMANCE_BULK_PROTEIN_BONUS_G,
   proteinBaseFromWeightKg,
   PROTEIN_G_PER_KG,
@@ -26,7 +29,13 @@ function hasSavedMetrics(profile: Profile): boolean {
   );
 }
 
-export function DietMetricsCalculator({ profile }: { profile: Profile }) {
+export function DietMetricsCalculator({
+  profile,
+  variant = 'default',
+}: {
+  profile: Profile;
+  variant?: 'default' | 'llplay';
+}) {
   const { habitsToday, updateBodyMetrics } = useApp();
   const saved = hasSavedMetrics(profile);
   const [editing, setEditing] = useState(() => !saved);
@@ -69,7 +78,14 @@ export function DietMetricsCalculator({ profile }: { profile: Profile }) {
       : baseProtein != null
         ? baseProtein + (performanceBulk ? PERFORMANCE_BULK_PROTEIN_BONUS_G : 0)
         : proteinTargetG(profile);
-  const logged = habitsToday?.protein_g ?? 0;
+  const loggedProtein = habitsToday?.protein_g ?? 0;
+  const loggedKcal = habitsToday?.calories_kcal ?? 0;
+  const effectiveKcalTarget =
+    saved && !editing
+      ? kcalTargetKcal(profile)
+      : validWeight
+        ? kcalBaseFromWeightKg(displayWeightKg) + (performanceBulk ? PERFORMANCE_BULK_KCAL_BONUS : 0)
+        : kcalTargetKcal(profile);
 
   const draftWeight = Number.parseFloat(weight);
   const draftHeight = Number.parseFloat(height);
@@ -91,14 +107,17 @@ export function DietMetricsCalculator({ profile }: { profile: Profile }) {
     setEditing(false);
   }
 
+  const rootClass = variant === 'llplay' ? 'diet-metrics llplay-details-metrics' : 'diet-metrics';
+  const editBtnClass = variant === 'llplay' ? 'llplay-details-metric-edit' : 'diet-metrics-edit';
+
   return (
-    <div className="diet-metrics">
+    <div className={rootClass}>
       {saved && !editing ? (
-        <div className="diet-metrics-saved-row">
+        <div className={variant === 'llplay' ? 'diet-metrics-saved-pill' : 'diet-metrics-saved-row'}>
           <span className="diet-metrics-saved-text">
-            {fmt(profile.body_weight_kg!)} kg · {fmt(profile.body_height_cm!)} cm
+            {fmt(profile.body_weight_kg!)} kg / {fmt(profile.body_height_cm!)} cm
           </span>
-          <button type="button" className="diet-metrics-edit" onClick={() => setEditing(true)}>
+          <button type="button" className={editBtnClass} onClick={() => setEditing(true)}>
             Edit
           </button>
         </div>
@@ -133,7 +152,7 @@ export function DietMetricsCalculator({ profile }: { profile: Profile }) {
 
           <div className="diet-metrics-actions">
             {saved && (
-              <button type="button" className="diet-metrics-edit" onClick={cancelEdit}>
+              <button type="button" className={editBtnClass} onClick={cancelEdit}>
                 Cancel
               </button>
             )}
@@ -143,7 +162,7 @@ export function DietMetricsCalculator({ profile }: { profile: Profile }) {
               disabled={!canSave}
               onClick={saveMetrics}
             >
-              Save & update protein target
+              Save & update protein + calorie targets
             </button>
           </div>
         </>
@@ -151,20 +170,28 @@ export function DietMetricsCalculator({ profile }: { profile: Profile }) {
 
       {bmi != null && bmiInfo && (
         <div className="diet-metrics-card">
-          <div className="diet-metrics-card-head">
-            <span className="diet-metrics-card-title">BMI</span>
-            <span className="diet-metrics-card-value">{fmt(bmi)}</span>
+          <div className="diet-metrics-stat-row">
+            <span className="diet-metrics-stat-label">BMI</span>
+            <span className="diet-metrics-stat-value">{fmt(bmi)}</span>
           </div>
           <p className="diet-metrics-card-sub">
-            <strong>{bmiInfo.label}</strong> — {bmiInfo.detail}
+            {variant === 'llplay' ? (
+              <>
+                {bmiInfo.label} — {bmiInfo.detail}
+              </>
+            ) : (
+              <>
+                <strong>{bmiInfo.label}</strong> — {bmiInfo.detail}
+              </>
+            )}
           </p>
         </div>
       )}
 
       <div className="diet-metrics-card">
-        <div className="diet-metrics-card-head">
-          <span className="diet-metrics-card-title">Protein target</span>
-          <span className="diet-metrics-card-value">{effectiveTarget} g</span>
+        <div className="diet-metrics-stat-row">
+          <span className="diet-metrics-stat-label">Protein target</span>
+          <span className="diet-metrics-stat-value">{effectiveTarget} g</span>
         </div>
         {baseProtein != null && validWeight ? (
           <p className="diet-metrics-card-sub muted">
@@ -178,8 +205,29 @@ export function DietMetricsCalculator({ profile }: { profile: Profile }) {
             Enter weight and height, then save. Default target is used until then.
           </p>
         )}
-        {logged > 0 && (
-          <p className="diet-metrics-card-sub muted">Today logged: {logged} g (home).</p>
+        {loggedProtein > 0 && (
+          <p className="diet-metrics-card-sub muted">Today logged: {loggedProtein} g protein (home).</p>
+        )}
+      </div>
+
+      <div className="diet-metrics-card">
+        <div className="diet-metrics-stat-row">
+          <span className="diet-metrics-stat-label">Calorie target</span>
+          <span className="diet-metrics-stat-value">{effectiveKcalTarget.toLocaleString()} kcal</span>
+        </div>
+        {validWeight ? (
+          <p className="diet-metrics-card-sub muted">
+            ≈ 38 kcal × {fmt(displayWeightKg)} kg from weight
+            {performanceBulk ? ` · +${PERFORMANCE_BULK_KCAL_BONUS} kcal ${PERFORMANCE_BULK_PROTEIN.bonusLabel}` : ''}. Log
+            kcal on home.
+          </p>
+        ) : (
+          <p className="diet-metrics-card-sub muted">Default target until weight is saved. Log kcal on home.</p>
+        )}
+        {loggedKcal > 0 && (
+          <p className="diet-metrics-card-sub muted">
+            Today logged: {loggedKcal.toLocaleString()} kcal (home).
+          </p>
         )}
       </div>
     </div>

@@ -7,6 +7,8 @@ export interface HabitDayRow {
   no_sugar: boolean;
   protein_met: boolean;
   protein_g?: number;
+  calories_met: boolean;
+  calories_kcal?: number;
   water_met: boolean;
   steps_met: boolean;
   sleep_met: boolean;
@@ -31,6 +33,8 @@ const emptyHabits = (): HabitsToday => ({
   no_sugar: false,
   protein_met: false,
   protein_g: 0,
+  calories_met: false,
+  calories_kcal: 0,
   water_met: false,
   steps_met: false,
   sleep_met: false,
@@ -69,6 +73,8 @@ export function buildHabitTimeline(input: {
           no_sugar: row.no_sugar,
           protein_met: row.protein_met,
           protein_g: row.protein_g ?? 0,
+          calories_met: row.calories_met ?? false,
+          calories_kcal: row.calories_kcal ?? 0,
           water_met: row.water_met,
           steps_met: row.steps_met,
           sleep_met: row.sleep_met,
@@ -90,6 +96,8 @@ export function buildHabitTimeline(input: {
       trained ||
       h.no_sugar ||
       h.protein_met ||
+      h.calories_met ||
+      (h.calories_kcal ?? 0) > 0 ||
       h.water_met ||
       h.steps_met ||
       h.sleep_met ||
@@ -112,6 +120,17 @@ export function buildHabitTimeline(input: {
 
 export function defaultTimelineRange(dayCount = 84): string[] {
   return lastNDaysEndingToday(dayCount);
+}
+
+/** CSS state classes for habit timeline / week strip (today orange, past trained black, etc.). */
+export function habitDayVisualClasses(d: HabitTimelineDay): string {
+  if (!d.logged) return 'is-empty';
+  const parts: string[] = [];
+  if (d.sick) parts.push('is-sick');
+  if (d.isToday) parts.push('is-today');
+  else if (d.trained) parts.push('is-past-trained');
+  else parts.push('is-no-train');
+  return parts.join(' ');
 }
 
 export function timelineSummary(days: HabitTimelineDay[]): {

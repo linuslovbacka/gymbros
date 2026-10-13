@@ -1,8 +1,14 @@
 /** Default daily protein goal (g) when `profiles.protein_target_g` is unset. */
 export const DEFAULT_PROTEIN_TARGET_G = 110;
 
+/** Default daily energy goal (kcal) when `profiles.kcal_target` is unset. */
+export const DEFAULT_KCAL_TARGET = 2600;
+
 /** Extra protein when performance/bulk mode is on (`profiles.maintenance_mode`). */
 export const PERFORMANCE_BULK_PROTEIN_BONUS_G = 25;
+
+/** Extra kcal when performance/bulk mode is on. */
+export const PERFORMANCE_BULK_KCAL_BONUS = 200;
 
 /** UI copy — DB flag remains `maintenance_mode` for compatibility. */
 export const PERFORMANCE_BULK_PROTEIN = {
@@ -70,6 +76,16 @@ export function proteinMetFromLogged(loggedG: number, targetG: number): boolean 
   return loggedG >= targetG;
 }
 
+export function caloriesMetFromLogged(loggedKcal: number, targetKcal: number): boolean {
+  return loggedKcal >= targetKcal;
+}
+
+/** Rough maintenance kcal from body weight (used when saving metrics). */
+export function kcalBaseFromWeightKg(weightKg: number): number {
+  if (!Number.isFinite(weightKg) || weightKg <= 0) return DEFAULT_KCAL_TARGET;
+  return Math.round(weightKg * 38);
+}
+
 export function proteinTargetG(profile?: {
   protein_target_g?: number;
   maintenance_mode?: boolean;
@@ -77,6 +93,15 @@ export function proteinTargetG(profile?: {
   const base = profile?.protein_target_g;
   const n = typeof base === 'number' && base > 0 ? base : DEFAULT_PROTEIN_TARGET_G;
   return profile?.maintenance_mode ? n + PERFORMANCE_BULK_PROTEIN_BONUS_G : n;
+}
+
+export function kcalTargetKcal(profile?: {
+  kcal_target?: number;
+  maintenance_mode?: boolean;
+} | null): number {
+  const base = profile?.kcal_target;
+  const n = typeof base === 'number' && base > 0 ? base : DEFAULT_KCAL_TARGET;
+  return profile?.maintenance_mode ? n + PERFORMANCE_BULK_KCAL_BONUS : n;
 }
 
 export interface DietRestriction {
@@ -195,13 +220,20 @@ export const DIET_RESTRICTIONS: DietRestriction[] = [
   },
 ];
 
-export function dietGoals(proteinTarget: number): DietGoal[] {
+export function dietGoals(proteinTarget: number, kcalTarget?: number): DietGoal[] {
+  const kcal = kcalTarget ?? DEFAULT_KCAL_TARGET;
   return [
     {
       id: 'protein',
       title: 'Protein',
       detail: 'Hit your daily protein target to support recovery and your habit score.',
       targetLabel: `${proteinTarget} g / day`,
+    },
+    {
+      id: 'calories',
+      title: 'Calories',
+      detail: 'Log intake on home with quick-adds — hit your daily energy target for the habit score.',
+      targetLabel: `${kcal.toLocaleString()} kcal / day`,
     },
     {
       id: 'water',

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { ExerciseGuide } from '@/components/ExerciseGuide';
 import { getExercise } from '@/content/exercises';
 import {
@@ -19,10 +19,12 @@ import {
   type SupersetBlock,
 } from '@/lib/workout-superset';
 import { CooldownStep } from '@/components/CooldownStep';
+import { LlPlayExerciseLog } from '@/components/LlPlayExerciseLog';
 import { TimedSetInput } from '@/components/TimedSetInput';
 import { cooldownVariantForMain } from '@/content/mobility';
+import { llplayCardsEnter, llplayCardsExit } from '@/lib/nothing-motion';
 import { useApp } from '@/state/store';
-import type { SessionDraft } from '@/screens/WorkoutScreen';
+import { draftWithElapsedSec, type SessionDraft } from '@/screens/WorkoutScreen';
 
 function offersMainCooldown(routine: WorkoutRoutine): boolean {
   return routine === 'main';
@@ -38,6 +40,10 @@ export function SupersetLogPhase({
   splitDay,
   onBack,
   onFinish,
+  llplay,
+  onRegisterShellBack,
+  onRegisterShellEnter,
+  screenRef,
 }: {
   items: WorkoutItem[];
   routine: WorkoutRoutine;
@@ -46,6 +52,10 @@ export function SupersetLogPhase({
   splitDay: SplitDay;
   onBack: () => void;
   onFinish: (d: SessionDraft) => void;
+  llplay?: boolean;
+  onRegisterShellBack?: (fn: () => void) => void;
+  onRegisterShellEnter?: (fn: () => void) => void;
+  screenRef?: RefObject<HTMLDivElement | null>;
 }) {
   const { climbExercise } = useApp();
   const [logItems, setLogItems] = useState<WorkoutItem[]>(() => initialItems);
@@ -65,6 +75,7 @@ export function SupersetLogPhase({
   const [accessoryWeight, setAccessoryWeight] = useState<boolean[]>(() => initialItems.map(() => false));
   const [ceilingDismissed, setCeilingDismissed] = useState<boolean[]>(() => initialItems.map(() => false));
   const [pendingDraft, setPendingDraft] = useState<SessionDraft | null>(null);
+  const [sessionStartedAt] = useState(() => Date.now());
 
   const block = blocks[blockIdx]!;
   const rounds = roundsForBlock(block, logItems);
@@ -79,6 +90,30 @@ export function SupersetLogPhase({
 
   const idx = activeItemIndex();
   const item = logItems[idx]!;
+  const motionKey = `${blockIdx}-${roundIdx}-${pairStep}`;
+  const cardRef = useRef<HTMLDivElement>(null);
+  const cardBusyRef = useRef(false);
+
+  useLayoutEffect(() => {
+    if (!llplay) return;
+    const card = cardRef.current;
+    if (!card) return;
+    cardBusyRef.current = true;
+    void llplayCardsEnter([card]).then(() => {
+      cardBusyRef.current = false;
+    });
+  }, [llplay, motionKey]);
+
+  function swapThen(apply: () => void) {
+    if (!llplay) {
+      apply();
+      return;
+    }
+    if (cardBusyRef.current) return;
+    const card = cardRef.current;
+    cardBusyRef.current = true;
+    void llplayCardsExit(card ? [card] : []).then(apply);
+  }
 
   function setVal(itemIndex: number, setNo: number, v: number) {
     setValues((prev) =>
@@ -217,56 +252,69 @@ export function SupersetLogPhase({
 
   function advance() {
     if (block.type === 'pair' && pairStep === 'a') {
-      setPairStep('b');
-      setVideoTab('b');
+      swapThen(() => {
+        setPairStep('b');
+        setVideoTab('b');
+      });
       return;
     }
 
-    setPairStep('a');
-    setVideoTab('a');
-
     if (!isLastRound) {
-      setRoundIdx(roundIdx + 1);
+      swapThen(() => {
+        setPairStep('a');
+        setVideoTab('a');
+        setRoundIdx(roundIdx + 1);
+      });
       return;
     }
     if (!isLastBlock) {
-      setBlockIdx(blockIdx + 1);
-      setRoundIdx(0);
+      swapThen(() => {
+        setPairStep('a');
+        setVideoTab('a');
+        setBlockIdx(blockIdx + 1);
+        setRoundIdx(0);
+      });
       return;
     }
     finish();
   }
 
-  function goBack() {
+  const goBack = useCallback(() => {
     if (block.type === 'pair' && pairStep === 'b') {
-      setPairStep('a');
-      setVideoTab('a');
+      swapThen(() => {
+        setPairStep('a');
+        setVideoTab('a');
+      });
       return;
     }
     if (roundIdx > 0) {
-      setRoundIdx(roundIdx - 1);
-      if (block.type === 'pair') {
-        setPairStep('b');
-        setVideoTab('b');
-      }
+      swapThen(() => {
+        setRoundIdx(roundIdx - 1);
+        if (block.type === 'pair') {
+          setPairStep('b');
+          setVideoTab('b');
+        }
+      });
       return;
     }
     if (blockIdx > 0) {
-      const prevBlock = blocks[blockIdx - 1]!;
-      setBlockIdx(blockIdx - 1);
-      const prevRounds = roundsForBlock(prevBlock, logItems);
-      setRoundIdx(prevRounds - 1);
-      if (prevBlock.type === 'pair') {
-        setPairStep('b');
-        setVideoTab('b');
-      } else {
-        setPairStep('a');
-        setVideoTab('a');
-      }
+      swapThen(() => {
+        const prevBlock = blocks[blockIdx - 1]!;
+        setBlockIdx(blockIdx - 1);
+        const prevRounds = roundsForBlock(prevBlock, logItems);
+        setRoundIdx(prevRounds - 1);
+        if (prevBlock.type === 'pair') {
+          setPairStep('b');
+          setVideoTab('b');
+        } else {
+          setPairStep('a');
+          setVideoTab('a');
+        }
+      });
       return;
     }
     onBack();
-  }
+  }, [block.type, blockIdx, blocks, logItems, llplay, onBack, pairStep, roundIdx]);
 
   function buildDraft(): SessionDraft {
     const entries: LoggedEntry[] = logItems.map((it, i) => {
@@ -304,8 +352,13 @@ export function SupersetLogPhase({
       setPendingDraft(draft);
       return;
     }
-    onFinish(draft);
+    onFinish(draftWithElapsedSec(draft, sessionStartedAt));
   }
+
+  useEffect(() => {
+    if (!llplay || !onRegisterShellBack) return;
+    onRegisterShellBack(goBack);
+  }, [llplay, onRegisterShellBack, goBack]);
 
   if (pendingDraft) {
     const variant = cooldownVariantForMain(pendingDraft.kind, splitDay);
@@ -313,8 +366,78 @@ export function SupersetLogPhase({
       <CooldownStep
         variant={variant}
         onBack={() => setPendingDraft(null)}
-        onSkip={() => onFinish(pendingDraft)}
-        onComplete={() => onFinish({ ...pendingDraft, cooldownCompleted: true })}
+        onSkip={() => onFinish(draftWithElapsedSec(pendingDraft, sessionStartedAt))}
+        onComplete={() =>
+          onFinish(draftWithElapsedSec({ ...pendingDraft, cooldownCompleted: true }, sessionStartedAt))
+        }
+        screenRef={screenRef}
+        onRegisterPrimary={onRegisterShellEnter}
+        sessionStartedAt={sessionStartedAt}
+      />
+    );
+  }
+
+  if (llplay) {
+    const isJump = item.exerciseId === 'jump_rope';
+    const isTimed = isJump || item.timed;
+    const pair = block.type === 'pair';
+    const otherName = pair ? logItems[pairStep === 'a' ? block.b : block.a]!.name : null;
+    const nextLabel =
+      pair && pairStep === 'a'
+        ? `Next: ${logItems[block.b]!.name}`
+        : isLastBlock && isLastRound
+          ? 'Finish workout'
+          : isLastRound
+            ? 'Next pairing'
+            : 'Next round';
+    return (
+      <LlPlayExerciseLog
+        key={`${item.exerciseId}-${idx}-${roundIdx}-${pairStep}`}
+        screenRef={screenRef}
+        motionRef={cardRef}
+        onBack={goBack}
+        kicker={isJump ? 'Warmup' : `Rep ${roundIdx + 1}/${rounds}`}
+        title={
+          isJump
+            ? 'Jumping rope'
+            : pair
+              ? `${logItems[block.a]!.name} VS ${logItems[block.b]!.name}`
+              : item.name
+        }
+        hint={
+          pair
+            ? 'Do move A, then move B — that’s your “rest.” \nNo timer between rounds.'
+            : undefined
+        }
+        exerciseId={item.exerciseId}
+        rungName={item.rungName}
+        jumpRope={isJump}
+        timed={isTimed && !pair}
+        jumpAllocatedSec={item.high}
+        onJumpComplete={() => {
+          setVal(idx, 0, item.high);
+          advance();
+        }}
+        onTimedComplete={() => {
+          setVal(idx, item.timed ? roundIdx : 0, item.high);
+          advance();
+        }}
+        reps={
+          isTimed && !pair
+            ? undefined
+            : {
+                current: values[idx]?.[roundIdx] ?? 0,
+                target: item.high,
+                onDec: () => setVal(idx, roundIdx, (values[idx]?.[roundIdx] ?? 0) - 1),
+                onInc: () => setVal(idx, roundIdx, (values[idx]?.[roundIdx] ?? 0) + 1),
+              }
+        }
+        nextLabel={otherName && pair && pairStep === 'a' ? `Next: ${otherName}` : nextLabel}
+        onNext={advance}
+        ceiling={isJump ? null : renderCeiling(idx)}
+        onRegisterPrimary={onRegisterShellEnter}
+        primaryBusy={cardBusyRef}
+        sessionStartedAt={sessionStartedAt}
       />
     );
   }
@@ -325,13 +448,19 @@ export function SupersetLogPhase({
       ? logItems[block.index]!.name
       : `${logItems[block.a]!.name} ↔ ${logItems[block.b]!.name}`;
 
-  return (
-    <div className="screen superset-log">
-      <div className="topbar">
-        <button type="button" className="back" onClick={goBack}>← Back</button>
-        <span className="tiny">{sessionTitle} · superset</span>
-        <span style={{ width: 48 }} />
-      </div>
+  const logInner = (
+    <>
+      {llplay ? (
+        <p className="llplay-workout-log-title">{sessionTitle} · superset</p>
+      ) : (
+        <div className="topbar">
+          <button type="button" className="back" onClick={goBack}>
+            ← Back
+          </button>
+          <span className="tiny">{sessionTitle} · superset</span>
+          <span style={{ width: 48 }} />
+        </div>
+      )}
 
       <p className="superset-round-label">
         Round {roundIdx + 1}/{rounds} · {blockLabel}
@@ -373,7 +502,7 @@ export function SupersetLogPhase({
         </div>
       )}
 
-      <div className="exercise-card">
+      <div className="exercise-card" ref={cardRef}>
         <ExerciseGuide
           key={`${item.exerciseId}-${roundIdx}-${pairStep}`}
           exerciseId={item.exerciseId}
@@ -405,6 +534,16 @@ export function SupersetLogPhase({
               ? 'Next pairing'
               : 'Next round'}
       </button>
-    </div>
+    </>
   );
+
+  if (llplay) {
+    return (
+      <div className="auth-llplay__screen-inner llplay-workout llplay-workout--log" ref={screenRef}>
+        <div className="llplay-workout-log superset-log">{logInner}</div>
+      </div>
+    );
+  }
+
+  return <div className="screen superset-log">{logInner}</div>;
 }

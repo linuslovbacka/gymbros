@@ -14,7 +14,14 @@ import type { RealtimePostgresChangesPayload, Session, User } from '@supabase/su
 import { supabase, SUPABASE_ENABLED } from '../lib/supabase';
 import type { HabitsToday, Profile } from './types';
 import { WRITABLE_PROFILE_COLUMNS } from './types';
-import { proteinBaseFromWeightKg, proteinMetFromLogged, proteinTargetG } from '../content/diet';
+import {
+  caloriesMetFromLogged,
+  kcalBaseFromWeightKg,
+  kcalTargetKcal,
+  proteinBaseFromWeightKg,
+  proteinMetFromLogged,
+  proteinTargetG,
+} from '../content/diet';
 import type { Mode, SplitDay } from '../content/types';
 import { normalizeSplitDay } from '../content/workouts';
 import type { ProgramStage } from '../content/workouts';
@@ -71,6 +78,8 @@ interface AppState {
   toggleProteinMet: () => Promise<void>;
   addProteinGrams: (grams: number) => Promise<void>;
   resetProteinLog: () => Promise<void>;
+  addCaloriesKcal: (kcal: number) => Promise<void>;
+  resetCaloriesLog: () => Promise<void>;
   toggleWaterMet: () => Promise<void>;
   toggleStepsMet: () => Promise<void>;
   toggleSleepMet: () => Promise<void>;
@@ -172,7 +181,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const date = todayISO();
     const { data, error } = await supabase
       .from('daily_habits')
-      .select('no_sugar, protein_met, protein_g, water_met, steps_met, sleep_met, creatine_met, mobility_met, sick')
+      .select(
+        'no_sugar, protein_met, protein_g, calories_met, calories_kcal, water_met, steps_met, sleep_met, creatine_met, mobility_met, sick',
+      )
       .eq('user_id', uid)
       .eq('date', date)
       .maybeSingle();
@@ -182,6 +193,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         no_sugar: false,
         protein_met: false,
         protein_g: 0,
+        calories_met: false,
+        calories_kcal: 0,
         water_met: false,
         steps_met: false,
         sleep_met: false,
@@ -194,6 +207,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       no_sugar: data?.no_sugar ?? false,
       protein_met: data?.protein_met ?? false,
       protein_g: data?.protein_g ?? 0,
+      calories_met: data?.calories_met ?? false,
+      calories_kcal: data?.calories_kcal ?? 0,
       water_met: data?.water_met ?? false,
       steps_met: data?.steps_met ?? false,
       sleep_met: data?.sleep_met ?? false,
@@ -211,6 +226,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       no_sugar: patch.no_sugar ?? habitsToday?.no_sugar ?? false,
       protein_met: patch.protein_met ?? habitsToday?.protein_met ?? false,
       protein_g: patch.protein_g ?? habitsToday?.protein_g ?? 0,
+      calories_met: patch.calories_met ?? habitsToday?.calories_met ?? false,
+      calories_kcal: patch.calories_kcal ?? habitsToday?.calories_kcal ?? 0,
       water_met: patch.water_met ?? habitsToday?.water_met ?? false,
       steps_met: patch.steps_met ?? habitsToday?.steps_met ?? false,
       sleep_met: patch.sleep_met ?? habitsToday?.sleep_met ?? false,
@@ -249,6 +266,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const resetProteinLog = useCallback(async () => {
     await upsertHabits({ protein_g: 0, protein_met: false });
+  }, [upsertHabits]);
+
+  const addCaloriesKcal = useCallback(
+    async (kcal: number) => {
+      if (!Number.isFinite(kcal) || kcal <= 0) return;
+      const target = kcalTargetKcal(profileRef.current);
+      const nextK = Math.round((habitsToday?.calories_kcal ?? 0) + kcal);
+      await upsertHabits({
+        calories_kcal: nextK,
+        calories_met: caloriesMetFromLogged(nextK, target),
+      });
+    },
+    [habitsToday, upsertHabits],
+  );
+
+  const resetCaloriesLog = useCallback(async () => {
+    await upsertHabits({ calories_kcal: 0, calories_met: false });
   }, [upsertHabits]);
 
   const toggleWaterMet = useCallback(async () => {
@@ -296,6 +330,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         body_weight_kg: w,
         body_height_cm: h,
         protein_target_g: proteinBaseFromWeightKg(w),
+        kcal_target: kcalBaseFromWeightKg(w),
       });
     },
     [patchProfile],
@@ -376,6 +411,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             no_sugar?: boolean;
             protein_met?: boolean;
             protein_g?: number;
+            calories_met?: boolean;
+            calories_kcal?: number;
             water_met?: boolean;
             steps_met?: boolean;
             sleep_met?: boolean;
@@ -389,6 +426,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
               no_sugar: row.no_sugar ?? false,
               protein_met: row.protein_met ?? false,
               protein_g: row.protein_g ?? 0,
+              calories_met: row.calories_met ?? false,
+              calories_kcal: row.calories_kcal ?? 0,
               water_met: row.water_met ?? false,
               steps_met: row.steps_met ?? false,
               sleep_met: row.sleep_met ?? false,
@@ -692,6 +731,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toggleProteinMet,
     addProteinGrams,
     resetProteinLog,
+    addCaloriesKcal,
+    resetCaloriesLog,
     toggleWaterMet,
     toggleStepsMet,
     toggleSleepMet,
@@ -716,7 +757,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     buyCosmetic,
     equipCosmetic,
     unequipSlot,
-  }), [ready, user, profile, partner, lastSplitDay, habitsToday, partnerHabitsToday, passwordRecovery, toggleNoSugar, toggleProteinMet, addProteinGrams, resetProteinLog, toggleWaterMet, toggleStepsMet, toggleSleepMet, toggleCreatineMet, toggleMobilityMet, toggleSickDay, setMaintenanceMode, skipBeginnerProgram, updateBodyMetrics, signInWithEmail, signUpWithEmail, resetPasswordForEmail, updatePassword, signOut, createPair, joinPair, pressProMode, completeSession, climbExercise, stepDownExercise, declineExercise, buyCosmetic, equipCosmetic, unequipSlot]);
+  }), [ready, user, profile, partner, lastSplitDay, habitsToday, partnerHabitsToday, passwordRecovery, toggleNoSugar, toggleProteinMet, addProteinGrams, resetProteinLog, addCaloriesKcal, resetCaloriesLog, toggleWaterMet, toggleStepsMet, toggleSleepMet, toggleCreatineMet, toggleMobilityMet, toggleSickDay, setMaintenanceMode, skipBeginnerProgram, updateBodyMetrics, signInWithEmail, signUpWithEmail, resetPasswordForEmail, updatePassword, signOut, createPair, joinPair, pressProMode, completeSession, climbExercise, stepDownExercise, declineExercise, buyCosmetic, equipCosmetic, unequipSlot]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

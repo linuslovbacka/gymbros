@@ -12,6 +12,7 @@ import {
   PERFORMANCE_BULK_PROTEIN,
   dietGoals,
   HAND_RULE_PORTIONS,
+  kcalTargetKcal,
   proteinTargetG,
   SICK_DAY_TRAINING_NOTE,
 } from '@/content/diet';
@@ -20,17 +21,26 @@ import { habitScore } from '@/lib/habits-score';
 
 const TODAY = () => new Date().toISOString().slice(0, 10);
 
-export function DietScreen() {
+export function DietScreen({
+  embedded = false,
+  variant = 'default',
+}: {
+  embedded?: boolean;
+  variant?: 'default' | 'llplay';
+}) {
   const { profile, habitsToday, setMaintenanceMode } = useApp();
   const [proteinGuideOpen, setProteinGuideOpen] = useState(false);
   if (!profile) return null;
 
   const proteinTarget = proteinTargetG(profile);
-  const goals = dietGoals(proteinTarget);
+  const kcalTarget = kcalTargetKcal(profile);
+  const goals = dietGoals(proteinTarget, kcalTarget);
   const today = habitsToday ?? {
     no_sugar: false,
     protein_met: false,
     protein_g: 0,
+    calories_met: false,
+    calories_kcal: 0,
     water_met: false,
     steps_met: false,
     sleep_met: false,
@@ -42,14 +52,151 @@ export function DietScreen() {
   const { done, total } = habitScore(today, trained);
   const performanceBulk = profile.maintenance_mode ?? false;
 
-  return (
-    <div className="screen">
-      <div className="topbar">
-        <Link className="back" href="/">
-          Back
-        </Link>
-        <div className="topbar-title">Diet</div>
+  if (embedded && variant === 'llplay') {
+    const otherGoals = goals.filter((g) => g.id !== 'protein' && g.id !== 'calories' && g.id !== 'water');
+    const waterGoal = goals.find((g) => g.id === 'water');
+
+    return (
+      <div className="llplay-details-pane llplay-details-pane--diet">
+        <div className="llplay-details-general">
+          <h2 className="llplay-details-general-title">general</h2>
+          <p className="llplay-details-general-lead">{DIET_HABITS_WHY_LEAD}</p>
+          <p className="llplay-details-general-meta">
+            Habits score <strong>{done}/{total}</strong>
+            {today.sick && ' — training excused while sick.'}
+          </p>
+        </div>
+
+        <div className="llplay-details-performance">
+          <button
+            type="button"
+            className={`llplay-details-performance-btn llplay-card${performanceBulk ? ' is-on' : ''}`}
+            data-llplay-card
+            onClick={() => setMaintenanceMode(!performanceBulk)}
+          >
+            {performanceBulk ? PERFORMANCE_BULK_PROTEIN.toggleOn : PERFORMANCE_BULK_PROTEIN.toggleOff}
+          </button>
+          <p className="llplay-details-performance-hint">{PERFORMANCE_BULK_PROTEIN.hint}</p>
+        </div>
+
+        <div className="llplay-details-card">
+          <div className="llplay-details-card-intro">
+            <h3 className="llplay-details-card-title">Protein &amp; BMI</h3>
+            <p className="llplay-details-card-intro-lead">
+              Set weight and height to calculate your daily protein target and BMI.
+            </p>
+          </div>
+          <DietMetricsCalculator profile={profile} variant="llplay" />
+          <button
+            type="button"
+            className="llplay-details-link-btn llplay-card"
+            data-llplay-card
+            onClick={() => setProteinGuideOpen(true)}
+          >
+            Protein alternatives &amp; fist portions
+          </button>
+        </div>
+
+        <ProteinAlternativesSheet open={proteinGuideOpen} onClose={() => setProteinGuideOpen(false)} />
+
+        <div className="llplay-details-card">
+          <h3 className="llplay-details-card-title">Restrictions</h3>
+          {DIET_RESTRICTIONS.map((r) => (
+            <div key={r.id} className="llplay-details-row">
+              <div className="llplay-details-row-head">
+                <p className="llplay-details-row-title">{r.title}</p>
+                {r.id === 'no_sugar' && (
+                  <span className={`llplay-details-pill${today.no_sugar ? ' is-done' : ''}`}>
+                    {today.no_sugar ? 'On track' : 'Open'}
+                  </span>
+                )}
+              </div>
+              <p className="llplay-details-row-sub">{r.detail}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="llplay-details-card">
+          <h3 className="llplay-details-card-title">Hand rule (portions)</h3>
+          <p className="llplay-details-card-intro-lead llplay-details-card-intro-lead--center">
+            No scale needed — size portions to your hand.
+          </p>
+          {HAND_RULE_PORTIONS.map((p) => (
+            <div key={p.id} className="llplay-details-row">
+              <div className="llplay-details-row-split">
+                <span className="llplay-details-row-title">{p.title}</span>
+                <span className="llplay-details-row-title">{p.measure}</span>
+              </div>
+              <p className="llplay-details-row-sub">{p.examples}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="llplay-details-card">
+          <div className="llplay-details-row-split llplay-details-row-split--creatine">
+            <span className="llplay-details-row-title">{CREATINE_GUIDE.title}</span>
+            <span className="llplay-details-row-title">{CREATINE_GUIDE.targetLabel}</span>
+          </div>
+          <p className="llplay-details-row-sub">{CREATINE_GUIDE.summary}</p>
+          <ul className="llplay-details-list">
+            {CREATINE_GUIDE.bullets.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </div>
+
+        {waterGoal && (
+          <div className="llplay-details-card">
+            <div className="llplay-details-row-split">
+              <span className="llplay-details-row-title">{waterGoal.title}</span>
+              <span className="llplay-details-row-title">{waterGoal.targetLabel}</span>
+            </div>
+            <p className="llplay-details-row-sub">{waterGoal.detail}</p>
+            <span className={`llplay-details-pill llplay-details-pill--inline${today.water_met ? ' is-done' : ''}`}>
+              {today.water_met ? 'Hit today' : 'Open'}
+            </span>
+          </div>
+        )}
+
+        <div className="llplay-details-card">
+          <h3 className="llplay-details-card-title">{DIET_PROGRAM_TIPS.title}</h3>
+          <ul className="llplay-details-list">
+            {DIET_PROGRAM_TIPS.items.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </div>
+
+        {otherGoals.length > 0 && (
+          <div className="llplay-details-card">
+            <h3 className="llplay-details-card-title">Other goals</h3>
+            {otherGoals.map((g) => (
+              <div key={g.id} className="llplay-details-row">
+                <div className="llplay-details-row-head">
+                  <p className="llplay-details-row-title">{g.title}</p>
+                  {g.targetLabel && <span className="llplay-details-pill">{g.targetLabel}</span>}
+                </div>
+                <p className="llplay-details-row-detail">{g.detail}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <p className="llplay-details-foot">{SICK_DAY_TRAINING_NOTE}</p>
       </div>
+    );
+  }
+
+  return (
+    <div className={embedded ? 'llplay-details-pane' : 'screen'}>
+      {!embedded && (
+        <div className="topbar">
+          <Link className="back" href="/">
+            Back
+          </Link>
+          <div className="topbar-title">Diet</div>
+        </div>
+      )}
 
       <section className="stack diet-section">
         <h2 className="section-title">Today</h2>
@@ -137,7 +284,7 @@ export function DietScreen() {
         <h2 className="section-title">Other goals</h2>
         <ul className="diet-list">
           {goals
-            .filter((g) => g.id !== 'protein')
+            .filter((g) => g.id !== 'protein' && g.id !== 'calories')
             .map((g) => (
               <li key={g.id} className="diet-card">
                 <div className="diet-card-head">

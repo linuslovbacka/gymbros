@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, type RefObject } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
+import { CalorieLogPanel, CalorieLogSummary } from '@/components/CalorieLogPanel';
 import { ProteinLogPanel, ProteinLogSummary } from '@/components/ProteinLogPanel';
 import {
   CREATINE_GUIDE,
+  kcalTargetKcal,
   NO_SUGAR_HABIT_HINT,
   proteinTargetG,
   SLEEP_TARGET_LABEL,
@@ -16,7 +18,14 @@ import { MOBILITY_HABIT_LABEL } from '@/content/mobility';
 import { habitScore } from '@/lib/habits-score';
 import { useApp } from '@/state/store';
 import type { HabitsToday, Profile } from '@/state/types';
-import { nothingPop, nothingTap, NOTHING_DURATION_MED, NOTHING_EASE, prefersReducedMotion } from '@/lib/nothing-motion';
+import {
+  llplayCardsEnter,
+  NOTHING_DURATION_MED,
+  NOTHING_EASE,
+  nothingPop,
+  nothingTap,
+  prefersReducedMotion,
+} from '@/lib/nothing-motion';
 
 const TODAY = () => new Date().toISOString().slice(0, 10);
 
@@ -28,6 +37,8 @@ const emptyHabits: HabitsToday = {
   no_sugar: false,
   protein_met: false,
   protein_g: 0,
+  calories_met: false,
+  calories_kcal: 0,
   water_met: false,
   steps_met: false,
   sleep_met: false,
@@ -41,13 +52,63 @@ interface CheckProps {
   sub?: string;
   done: boolean;
   onToggle?: () => void;
+  /** Opens workout (same as TRAIN); does not toggle the checkmark. */
+  onPress?: () => void;
   readOnly?: boolean;
+  /** D-pad navigates between cards with this attribute (LL PLAY home). */
+  llplayCard?: boolean;
 }
 
-function CheckRow({ label, sub, done, onToggle, readOnly }: CheckProps) {
+const LLPLAY_HABIT_ORDER = [
+  'protein',
+  'calories',
+  'sleep',
+  'training',
+  'steps',
+  'no_sugar',
+  'creatine',
+  'mobility',
+  'water',
+] as const;
+
+function sortLlplayHabitRows<T extends { id: string; done: boolean }>(
+  rows: T[],
+  sickRow: T,
+): T[] {
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  const ordered = LLPLAY_HABIT_ORDER.map((id) => byId.get(id)).filter(Boolean) as T[];
+  const open = ordered.filter((r) => !r.done);
+  const finished = ordered.filter((r) => r.done);
+  return [...open, ...finished, sickRow];
+}
+
+function LlplaySickRow({ active, onToggle }: { active: boolean; onToggle: () => void }) {
+  const rowRef = useRef<HTMLButtonElement>(null);
+
+  function handleClick() {
+    nothingTap(rowRef.current);
+    onToggle();
+  }
+
+  return (
+    <button
+      ref={rowRef}
+      type="button"
+      className={`llplay-sick-row nothing-press llplay-card${active ? ' is-on' : ''}`}
+      data-llplay-card
+      aria-pressed={active}
+      onClick={handleClick}
+    >
+      Sick today
+    </button>
+  );
+}
+
+function CheckRow({ label, sub, done, onToggle, onPress, readOnly, llplayCard }: CheckProps) {
   const rowRef = useRef<HTMLButtonElement | HTMLDivElement>(null);
   const markRef = useRef<HTMLSpanElement>(null);
-  const Tag = readOnly || !onToggle ? 'div' : 'button';
+  const pressable = Boolean(onToggle || onPress);
+  const Tag = pressable ? 'button' : 'div';
 
   useEffect(() => {
     if (prefersReducedMotion() || !markRef.current) return;
@@ -60,16 +121,34 @@ function CheckRow({ label, sub, done, onToggle, readOnly }: CheckProps) {
 
   function handleClick() {
     nothingTap(rowRef.current);
-    onToggle?.();
+    if (onToggle) onToggle();
+    else onPress?.();
+  }
+
+  if (llplayCard) {
+    return (
+      <Tag
+        ref={rowRef as React.RefObject<HTMLButtonElement & HTMLDivElement>}
+        type={Tag === 'button' ? 'button' : undefined}
+        className={`daily-check daily-check--llplay-pill nothing-press ${done ? 'done' : ''}${readOnly && !onPress ? ' readonly' : ''}${onPress ? ' is-nav' : ''} llplay-card`}
+        {...(pressable ? { 'data-llplay-card': true } : {})}
+        onClick={pressable ? handleClick : undefined}
+      >
+        <span className="daily-check-llplay-main">
+          <span className="daily-check-llplay-dot" ref={markRef} aria-hidden="true" data-done={done ? 'true' : 'false'} />
+          <span className="daily-check-label">{label}</span>
+        </span>
+        {sub ? <span className="daily-check-sub">{sub}</span> : null}
+      </Tag>
+    );
   }
 
   return (
     <Tag
       ref={rowRef as React.RefObject<HTMLButtonElement & HTMLDivElement>}
       type={Tag === 'button' ? 'button' : undefined}
-      className={`daily-check nothing-press ${done ? 'done' : ''}${readOnly ? ' readonly' : ''}`}
-      onClick={readOnly ? undefined : handleClick}
-      disabled={readOnly}
+      className={`daily-check nothing-press ${done ? 'done' : ''}${readOnly && !onPress ? ' readonly' : ''}${onPress ? ' is-nav' : ''}`}
+      onClick={pressable ? handleClick : undefined}
     >
       <span className="daily-check-mark" ref={markRef} aria-hidden="true">
         {done ? '✓' : '○'}
@@ -80,7 +159,18 @@ function CheckRow({ label, sub, done, onToggle, readOnly }: CheckProps) {
   );
 }
 
-export function DailyChecks({ partnerProfile }: { partnerProfile?: Profile | null }) {
+export function DailyChecks({
+  partnerProfile,
+  onTrain,
+  variant = 'default',
+  containerRef,
+}: {
+  partnerProfile?: Profile | null;
+  onTrain?: () => void;
+  variant?: 'default' | 'llplay';
+  containerRef?: RefObject<HTMLDivElement | null>;
+}) {
+  const isLlplay = variant === 'llplay';
   const {
     profile,
     habitsToday,
@@ -99,14 +189,8 @@ export function DailyChecks({ partnerProfile }: { partnerProfile?: Profile | nul
 
   useGSAP(
     () => {
-      if (prefersReducedMotion() || !rootRef.current) return;
-      gsap.from(rootRef.current.querySelectorAll('.daily-checks-stack > *'), {
-        opacity: 0,
-        duration: NOTHING_DURATION_MED,
-        stagger: 0.04,
-        ease: NOTHING_EASE,
-        clearProps: 'opacity',
-      });
+      if (!rootRef.current) return;
+      void llplayCardsEnter(rootRef.current.querySelectorAll('.daily-checks-stack > *'));
     },
     { scope: rootRef },
   );
@@ -145,6 +229,7 @@ export function DailyChecks({ partnerProfile }: { partnerProfile?: Profile | nul
             label="Sleep"
             sub={SLEEP_TARGET_LABEL}
             done={mine.sleep_met}
+            llplayCard={isLlplay}
             onToggle={() => void toggleSleepMet()}
           />
         ),
@@ -155,9 +240,10 @@ export function DailyChecks({ partnerProfile }: { partnerProfile?: Profile | nul
         node: (
           <CheckRow
             key="no_sugar"
-            label="No sugar"
+            label="No Sugar"
             sub={NO_SUGAR_HABIT_HINT}
             done={mine.no_sugar}
+            llplayCard={isLlplay}
             onToggle={() => void toggleNoSugar()}
           />
         ),
@@ -165,7 +251,24 @@ export function DailyChecks({ partnerProfile }: { partnerProfile?: Profile | nul
       {
         id: 'protein',
         done: mine.protein_met,
-        node: <ProteinLogPanel key="protein" profile={profile} variant="home" />,
+        node: (
+          <ProteinLogPanel
+            key="protein"
+            profile={profile}
+            variant={isLlplay ? 'llplay' : 'home'}
+          />
+        ),
+      },
+      {
+        id: 'calories',
+        done: mine.calories_met,
+        node: (
+          <CalorieLogPanel
+            key="calories"
+            profile={profile}
+            variant={isLlplay ? 'llplay' : 'home'}
+          />
+        ),
       },
       {
         id: 'water',
@@ -176,6 +279,7 @@ export function DailyChecks({ partnerProfile }: { partnerProfile?: Profile | nul
             label="Water"
             sub={WATER_TARGET_LABEL}
             done={mine.water_met}
+            llplayCard={isLlplay}
             onToggle={() => void toggleWaterMet()}
           />
         ),
@@ -189,6 +293,7 @@ export function DailyChecks({ partnerProfile }: { partnerProfile?: Profile | nul
             label="Steps"
             sub={STEPS_TARGET_LABEL}
             done={mine.steps_met}
+            llplayCard={isLlplay}
             onToggle={() => void toggleStepsMet()}
           />
         ),
@@ -199,9 +304,10 @@ export function DailyChecks({ partnerProfile }: { partnerProfile?: Profile | nul
         node: (
           <CheckRow
             key="creatine"
-            label="Kreatin"
+            label={isLlplay ? 'Creatine' : 'Kreatin'}
             sub={CREATINE_GUIDE.targetLabel}
             done={mine.creatine_met}
+            llplayCard={isLlplay}
             onToggle={() => void toggleCreatineMet()}
           />
         ),
@@ -215,6 +321,7 @@ export function DailyChecks({ partnerProfile }: { partnerProfile?: Profile | nul
             label="Mobility"
             sub={MOBILITY_HABIT_LABEL}
             done={mine.mobility_met}
+            llplayCard={isLlplay}
             onToggle={() => void toggleMobilityMet()}
           />
         ),
@@ -223,18 +330,36 @@ export function DailyChecks({ partnerProfile }: { partnerProfile?: Profile | nul
         id: 'training',
         done: mine.sick || trained,
         node: mine.sick ? (
-          <CheckRow key="training" label="Training" sub="Rest day" done readOnly />
+          <CheckRow key="training" label="Training" sub="Rest day" done readOnly llplayCard={isLlplay} />
         ) : (
-          <CheckRow key="training" label="Training" done={trained} readOnly />
+          <CheckRow
+            key="training"
+            label="Training"
+            done={trained}
+            readOnly
+            llplayCard={isLlplay}
+            onPress={onTrain}
+          />
         ),
       },
     ];
+
+    if (isLlplay) {
+      const sickRow = {
+        id: 'sick',
+        done: mine.sick,
+        node: <LlplaySickRow key="sick" active={mine.sick} onToggle={() => void toggleSickDay()} />,
+      };
+      return sortLlplayHabitRows(rows, sickRow);
+    }
+
     return [...rows].sort((a, b) => Number(a.done) - Number(b.done));
   }, [
     mine.creatine_met,
     mine.mobility_met,
     mine.no_sugar,
     mine.protein_met,
+    mine.calories_met,
     mine.sick,
     mine.sleep_met,
     mine.steps_met,
@@ -244,29 +369,43 @@ export function DailyChecks({ partnerProfile }: { partnerProfile?: Profile | nul
     toggleCreatineMet,
     toggleMobilityMet,
     toggleNoSugar,
+    toggleSickDay,
     toggleSleepMet,
     toggleStepsMet,
     toggleWaterMet,
+    onTrain,
+    isLlplay,
   ]);
 
   if (!profile) return null;
 
-  return (
-    <div className="daily-checks" ref={rootRef}>
-      <div className="daily-checks-head">
-        <span className="daily-checks-title">Today</span>
-        <span className="daily-checks-score" ref={scoreRef}>
-          {done}/{total}
-        </span>
-      </div>
+  function setChecksRef(el: HTMLDivElement | null) {
+    rootRef.current = el;
+    if (containerRef && 'current' in containerRef) {
+      (containerRef as { current: HTMLDivElement | null }).current = el;
+    }
+  }
 
-      <button
-        type="button"
-        className={`btn sick-day-btn nothing-press${mine.sick ? ' sick-day-btn-on' : ''}`}
-        onClick={() => void toggleSickDay()}
-      >
-        {mine.sick ? "I'm sick — rest day" : "I'm sick today (skip training)"}
-      </button>
+  return (
+    <div className={`daily-checks${isLlplay ? ' is-llplay' : ''}`} ref={setChecksRef}>
+      {!isLlplay && (
+        <div className="daily-checks-head">
+          <span className="daily-checks-title">Today</span>
+          <span className="daily-checks-score" ref={scoreRef}>
+            {done}/{total}
+          </span>
+        </div>
+      )}
+
+      {!isLlplay && (
+        <button
+          type="button"
+          className={`btn sick-day-btn nothing-press${mine.sick ? ' sick-day-btn-on' : ''}`}
+          onClick={() => void toggleSickDay()}
+        >
+          {mine.sick ? "I'm sick — rest day" : "I'm sick today (skip training)"}
+        </button>
+      )}
 
       <div className="daily-checks-stack">
         {habitRows.map((row) => (
@@ -286,6 +425,11 @@ export function DailyChecks({ partnerProfile }: { partnerProfile?: Profile | nul
             logged={bro.habits.protein_g ?? 0}
             target={proteinTargetG(partnerProfile ?? undefined)}
             met={bro.habits.protein_met}
+          />
+          <CalorieLogSummary
+            logged={bro.habits.calories_kcal ?? 0}
+            target={kcalTargetKcal(partnerProfile ?? undefined)}
+            met={bro.habits.calories_met}
           />
           <CheckRow label="Water" done={bro.habits.water_met} readOnly />
           <CheckRow label="Steps" done={bro.habits.steps_met} readOnly />

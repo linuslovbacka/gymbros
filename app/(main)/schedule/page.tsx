@@ -1,7 +1,5 @@
-'use client';
-
-import { ScheduleScreen } from '@/screens/ScheduleScreen';
+import { redirect } from 'next/navigation';
 
 export default function SchedulePage() {
-  return <ScheduleScreen />;
+  redirect('/details?tab=schedule');
 }

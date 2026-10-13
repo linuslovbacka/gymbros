@@ -1,4 +1,10 @@
-import { useState } from 'react';
+'use client';
+
+import { useCallback, useRef, useState } from 'react';
+import Image from 'next/image';
+import { GameBoyShell } from '@/components/GameBoyShell';
+import { useAuthGameBoyNavigation } from '@/hooks/useAuthGameBoyNavigation';
+import { gameBoyPress } from '@/lib/gameboy-motion';
 import { useApp } from '../state/store';
 
 type Mode = 'in' | 'up' | 'forgot';
@@ -12,12 +18,59 @@ export function AuthScreen() {
   const [info, setInfo] = useState<string>();
   const [busy, setBusy] = useState(false);
 
+  const formRef = useRef<HTMLFormElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const forgotRef = useRef<HTMLButtonElement>(null);
+  const submitRef = useRef<HTMLButtonElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+
   function switchMode(next: Mode) {
     setMode(next);
     setError(undefined);
     setInfo(undefined);
     if (next === 'forgot') setPassword('');
   }
+
+  const getFocusables = useCallback(() => {
+    if (mode === 'forgot') {
+      return [emailRef.current, submitRef.current, toggleRef.current];
+    }
+    if (mode === 'up') {
+      return [emailRef.current, passwordRef.current, submitRef.current, toggleRef.current];
+    }
+    return [
+      emailRef.current,
+      passwordRef.current,
+      forgotRef.current,
+      submitRef.current,
+      toggleRef.current,
+    ];
+  }, [mode]);
+
+  const onEnter = useCallback(() => {
+    const active = document.activeElement as HTMLElement | null;
+    if (active?.tagName === 'BUTTON' && active !== submitRef.current) {
+      gameBoyPress(active);
+      active.click();
+      return;
+    }
+    formRef.current?.requestSubmit();
+  }, []);
+
+  const onBack = useCallback(() => {
+    if (mode === 'forgot' || mode === 'up') {
+      switchMode('in');
+      return;
+    }
+    (document.activeElement as HTMLElement | null)?.blur();
+  }, [mode]);
+
+  const { handlePad, handleEnter, handleBack } = useAuthGameBoyNavigation({
+    focusables: getFocusables,
+    onEnter,
+    onBack,
+  });
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -40,64 +93,110 @@ export function AuthScreen() {
     else if (mode === 'up') setInfo('Check your email to confirm, then sign in.');
   }
 
-  const title =
-    mode === 'forgot' ? 'Reset your password' : mode === 'up' ? 'Create your account' : 'Sign in';
+  const formLabel =
+    mode === 'forgot' ? 'Reset' : mode === 'up' ? 'Sign up' : 'Sign in';
+  const submitLabel =
+    mode === 'forgot' ? 'Send reset link' : mode === 'in' ? 'Sign in' : 'Create account';
+  const toggleLabel =
+    mode === 'forgot'
+      ? 'Back to sign in'
+      : mode === 'in'
+        ? 'No account? Sign up.'
+        : 'Have an account? Sign in.';
 
   return (
-    <div className="gate">
-      <div>
-        <div className="logo">GYMBROS</div>
-        <div className="tagline">Two bros. One rivalry. Infinite gains.</div>
-      </div>
-
-      <form className="stack" onSubmit={submit}>
-        <div className="muted" style={{ fontSize: 13, textAlign: 'center' }}>{title}</div>
-        <input
-          className="field"
-          type="email"
-          placeholder="Email"
-          value={email}
-          autoComplete="email"
-          onChange={(e) => setEmail(e.target.value)}
-          required
+    <GameBoyShell
+      onPad={handlePad}
+      onEnter={handleEnter}
+      onBack={handleBack}
+      sessionActive={false}
+    >
+      <div className="auth-llplay__screen-inner">
+        <Image
+          src="/ui/login/logo-barbell.svg"
+          alt=""
+          width={79}
+          height={79}
+          className="auth-llplay__logo"
+          priority
         />
-        {mode !== 'forgot' && (
-          <input
-            className="field"
-            type="password"
-            placeholder="Password"
-            value={password}
-            autoComplete={mode === 'in' ? 'current-password' : 'new-password'}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        )}
-        {mode === 'in' && (
-          <button
-            type="button"
-            className="btn btn-ghost"
-            style={{ alignSelf: 'flex-end', marginTop: -8, fontSize: 13 }}
-            onClick={() => switchMode('forgot')}
-          >
-            Forgot password?
-          </button>
-        )}
-        {error && <div className="error">{error}</div>}
-        {info && <div className="muted" style={{ fontSize: 13 }}>{info}</div>}
-        <button className="btn btn-primary btn-block" disabled={busy} type="submit">
-          {mode === 'forgot' ? 'Send reset link' : mode === 'in' ? 'Sign in' : 'Create account'}
-        </button>
-      </form>
 
-      {mode === 'forgot' ? (
-        <button className="btn btn-ghost btn-block" onClick={() => switchMode('in')}>
-          Back to sign in
-        </button>
-      ) : (
-        <button className="btn btn-ghost btn-block" onClick={() => switchMode(mode === 'in' ? 'up' : 'in')}>
-          {mode === 'in' ? 'No account? Sign up' : 'Have an account? Sign in'}
-        </button>
-      )}
-    </div>
+        <h1 className="auth-llplay__tagline">
+          Two bros.
+          <br />
+          One rivalry.
+          <br />
+          Infinite gains.
+        </h1>
+
+        <form ref={formRef} className="auth-llplay__form" onSubmit={submit}>
+          <div className="auth-llplay__form-fields">
+            <p className="auth-llplay__form-label">{formLabel}</p>
+            <input
+              ref={emailRef}
+              className="auth-llplay__field"
+              type="email"
+              placeholder="Email"
+              value={email}
+              autoComplete="email"
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            {mode !== 'forgot' && (
+              <input
+                ref={passwordRef}
+                className="auth-llplay__field"
+                type="password"
+                placeholder="Password"
+                value={password}
+                autoComplete={mode === 'in' ? 'current-password' : 'new-password'}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            )}
+            {mode === 'in' && (
+              <button
+                ref={forgotRef}
+                type="button"
+                className="auth-llplay__link auth-llplay__pressable"
+                onClick={(e) => {
+                  gameBoyPress(e.currentTarget);
+                  switchMode('forgot');
+                }}
+              >
+                Forgot password?
+              </button>
+            )}
+            {error && <p className="auth-llplay__error">{error}</p>}
+            {info && <p className="auth-llplay__info">{info}</p>}
+          </div>
+
+          <div className="auth-llplay__actions">
+            <button
+              ref={submitRef}
+              className="auth-llplay__submit auth-llplay__pressable"
+              disabled={busy}
+              type="submit"
+              onClick={(e) => gameBoyPress(e.currentTarget)}
+            >
+              {submitLabel}
+            </button>
+            <button
+              ref={toggleRef}
+              type="button"
+              className="auth-llplay__toggle auth-llplay__pressable"
+              onClick={(e) => {
+                gameBoyPress(e.currentTarget);
+                if (mode === 'forgot') switchMode('in');
+                else switchMode(mode === 'in' ? 'up' : 'in');
+              }}
+            >
+              {toggleLabel}
+            </button>
+          </div>
+        </form>
+
+      </div>
+    </GameBoyShell>
   );
 }

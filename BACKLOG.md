@@ -25,6 +25,47 @@ Open design questions and deferred work. Not yet scheduled.
 
 ---
 
+## Gymbros product design tokens (LL PLAY Figma file)
+
+**Status:** Not started — scoped for a single agent pass when scheduled.
+
+**Context:** Gymbros product UI (habits, train, diet, schedule, logging, Nothing-style
+surfaces) lives **inside the LL PLAY Figma file** as its own pages/frames. Code should
+still treat **product tokens** (`src/index.css` `:root`, `.panel`, `.btn`, …) separately
+from **LL PLAY shell** chrome (`auth-llplay__*`, bezel/LCD/D-pad in `screens.css`).
+
+### Goal
+Formalize a small internal design system so product UI stays consistent and reviews are
+easy — without a full component library or Figma auto-sync.
+
+### Agent scope (when picked up)
+1. **Extend `src/index.css` `:root`** — space scale, type scale, radius scale (align
+   with existing `--radius` / `--radius-sm` / `--radius-pill`, motion vars); alias
+   current colors rather than rebranding.
+2. **`docs/gymbros-design.md`** — Figma = LL PLAY file, Gymbros section; product vs
+   shell CSS; typography (Inter + DotGothic); nested-radius rule
+   (`r_inner = max(0, r_outer − gap)`) with documented Figma exceptions (bezel → inner
+   scroll, etc.).
+3. **Cursor rule** (e.g. `.cursor/rules/gymbros-design.mdc`) — new **product** CSS uses
+   tokens; avoid raw surface hex; nested inset radii follow the rule unless listed as
+   exception.
+4. **Optional:** split `screens.css` → `screens-gymbros.css` + `screens-llplay.css` if
+   merge noise is bad; **do not** rewrite all LL PLAY styles into Gymbros tokens.
+5. **Light exemplar refactor** — tokenize a few hot spots (e.g. stepper, choice row,
+   one diet panel), not a full `screens.css` sweep.
+
+### Out of scope (for now)
+- React component library / Storybook for every state
+- Syncing every Figma variable until Gymbros collections are named in Figma
+- Stylelint or CI enforcement (add later if desired)
+
+### Prompt stub
+> Create Gymbros product design tokens in `src/index.css`, `docs/gymbros-design.md`,
+> and a Cursor rule (tokens + nested radius). Gymbros frames live in the LL PLAY Figma
+> file; keep shell CSS separate. No Storybook; no full screens.css rewrite.
+
+---
+
 ## Wardrobe changes vs. spritesheet generation cost
 
 **Status:** Open — recommendation below, not yet implemented.

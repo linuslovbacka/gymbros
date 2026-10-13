@@ -1,6 +1,17 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
+import gsap from 'gsap';
+import { GameBoyShell } from '@/components/GameBoyShell';
+import { LlPlayRoot } from '@/components/LlPlayRoot';
+import {
+  LLPLAY_CARD_SELECTOR,
+  useHomeGameBoyNavigation,
+} from '@/hooks/useHomeGameBoyNavigation';
+import { useLlplayVerticalRubberBand } from '@/hooks/useLlplayVerticalRubberBand';
+import { MVP_MODE } from '@/lib/mvp';
 import { useApp } from '../state/store';
 import {
   ceilingPromptCopy,
@@ -33,7 +44,17 @@ import { CooldownStep } from '@/components/CooldownStep';
 import { SupersetLogPhase } from '@/components/SupersetLogPhase';
 import { SkipBeginnerSheet } from '@/components/SkipBeginnerSheet';
 import { TimedSetInput } from '@/components/TimedSetInput';
+import { LlPlayExerciseLog } from '@/components/LlPlayExerciseLog';
 import { canShowGluteRoutine } from '@/lib/personal-routines';
+import { gameBoyPress } from '@/lib/gameboy-motion';
+import { llplayCardsEnter, llplayCardsExit, nothingTap } from '@/lib/nothing-motion';
+import {
+  applyWorkoutLogStatic,
+  LCD_LOG_TWEEN_CLASS,
+  playWorkoutLogEnter,
+  playWorkoutLogExit,
+  queryWorkoutChrome,
+} from '@/lib/workout-log-motion';
 import { useSupersetFlow } from '@/lib/workout-superset';
 
 export interface SessionDraft {
@@ -44,6 +65,15 @@ export interface SessionDraft {
   splitDay?: SplitDay;
   entries: LoggedEntry[];
   cooldownCompleted?: boolean;
+  /** Whole log session wall time (sec), frozen when the draft is finalized. */
+  elapsedSec?: number;
+}
+
+export function draftWithElapsedSec(draft: SessionDraft, sessionStartedAt: number): SessionDraft {
+  return {
+    ...draft,
+    elapsedSec: Math.max(0, Math.floor((Date.now() - sessionStartedAt) / 1000)),
+  };
 }
 
 function offersMainCooldown(routine: WorkoutRoutine): boolean {
@@ -51,6 +81,13 @@ function offersMainCooldown(routine: WorkoutRoutine): boolean {
 }
 
 type Phase = 'mode' | 'pick' | 'warmup' | 'log';
+
+function llplayMotionCards(root: HTMLElement | null): HTMLElement[] {
+  if (!root) return [];
+  const pills = Array.from(root.querySelectorAll<HTMLElement>('.llplay-choice-pill'));
+  if (pills.length > 0) return pills;
+  return Array.from(root.querySelectorAll<HTMLElement>('.exercise-card'));
+}
 
 export function WorkoutScreen({
   onFinish,
@@ -62,8 +99,10 @@ export function WorkoutScreen({
   /** Reserved for `/workout?routine=…` — user still picks Home/Gym first. */
   initialRoutineParam?: string | null;
 }) {
-  const { user, profile, lastSplitDay, skipBeginnerProgram } = useApp();
+  const router = useRouter();
+  const { user, profile, lastSplitDay, skipBeginnerProgram, signOut } = useApp();
   const showGlutes = canShowGluteRoutine(user?.id);
+  const isLlplay = MVP_MODE;
 
   void initialRoutineParam;
 
@@ -75,6 +114,18 @@ export function WorkoutScreen({
   const [includeJumpRope, setIncludeJumpRope] = useState(false);
   const [skipSheetOpen, setSkipSheetOpen] = useState(false);
   const [showBeginnerFullPlan, setShowBeginnerFullPlan] = useState(false);
+
+  const screenRef = useRef<HTMLDivElement>(null);
+  const lcdRef = useRef<HTMLDivElement>(null);
+  const deviceRef = useRef<HTMLDivElement>(null);
+  const scrollBodyRef = useRef<HTMLDivElement>(null);
+  const shellBackRef = useRef<() => void>(() => {});
+  const busyRef = useRef(false);
+  const pendingLogEnterRef = useRef(false);
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
+  const [lcdLogLive, setLcdLogLive] = useState(false);
+  const [lcdLogTween, setLcdLogTween] = useState(false);
 
   const sessionSplitDay = kind === 'split' ? chosenSplitDay : undefined;
 
@@ -88,14 +139,95 @@ export function WorkoutScreen({
     });
   }, [profile, phase, mode, lastSplitDay, showGlutes]);
 
+  const goPhase = useCallback((next: Phase) => {
+    if (!isLlplay) {
+      setPhase(next);
+      return;
+    }
+    if (busyRef.current) return;
+    if (phaseRef.current === next) return;
+    busyRef.current = true;
+
+    const from = phaseRef.current;
+    const lcd = lcdRef.current;
+    const chrome = queryWorkoutChrome(deviceRef.current);
+
+    if (from === 'log' && next !== 'log') {
+      const finishLeave = () => {
+        if (lcd) applyWorkoutLogStatic(lcd, chrome, screenRef.current, false);
+        setLcdLogLive(false);
+        setLcdLogTween(false);
+        setPhase(next);
+      };
+      if (!lcd) {
+        finishLeave();
+        return;
+      }
+      setLcdLogTween(true);
+      void playWorkoutLogExit({
+        screen: lcd,
+        chrome,
+        logLayer: screenRef.current,
+      }).then(finishLeave);
+      return;
+    }
+
+    if (next === 'log') {
+      pendingLogEnterRef.current = true;
+      setLcdLogTween(true);
+      lcd?.classList.add(LCD_LOG_TWEEN_CLASS);
+      setPhase(next);
+      return;
+    }
+
+    void llplayCardsExit(llplayMotionCards(screenRef.current)).then(() => {
+      setPhase(next);
+    });
+  }, [isLlplay]);
+
+  useLayoutEffect(() => {
+    if (!isLlplay) return;
+    if (phase === 'log') {
+      const lcd = lcdRef.current;
+      const chrome = queryWorkoutChrome(deviceRef.current);
+      const logLayer = screenRef.current;
+      if (pendingLogEnterRef.current || lcdLogTween) {
+        pendingLogEnterRef.current = false;
+        if (!lcd) {
+          setLcdLogTween(false);
+          setLcdLogLive(true);
+          busyRef.current = false;
+          return;
+        }
+        let cancelled = false;
+        void playWorkoutLogEnter({ screen: lcd, chrome, logLayer }).then(() => {
+          if (cancelled) return;
+          setLcdLogTween(false);
+          setLcdLogLive(true);
+          busyRef.current = false;
+        });
+        return () => {
+          cancelled = true;
+        };
+      }
+      busyRef.current = false;
+      return;
+    }
+    busyRef.current = true;
+    void llplayCardsEnter(llplayMotionCards(screenRef.current)).then(() => {
+      busyRef.current = false;
+    });
+  }, [isLlplay, phase, lcdLogTween]);
+
   function startSession(pick: SessionPick) {
+    if (isLlplay && busyRef.current) return;
     setIncludeJumpRope(false);
     const { needsWarmup } = applySessionPick(pick, {
       setRoutine,
       setKind,
       setChosenSplitDay,
     });
-    setPhase(needsWarmup ? 'warmup' : 'log');
+    goPhase(needsWarmup ? 'warmup' : 'log');
   }
 
   const items = useMemo<WorkoutItem[]>(() => {
@@ -113,43 +245,129 @@ export function WorkoutScreen({
     return base;
   }, [profile, phase, routine, mode, kind, sessionSplitDay, includeJumpRope]);
 
+  const logBack = useCallback(() => {
+    if (routine === 'mobility' || routine === 'conditioning') {
+      goPhase('pick');
+      return;
+    }
+    if (strengthRoutine(routine)) goPhase('warmup');
+    else goPhase('pick');
+  }, [routine, goPhase]);
+
+  useEffect(() => {
+    if (!isLlplay) return;
+    if (phase === 'mode') {
+      shellBackRef.current = () => {
+        if (busyRef.current) return;
+        busyRef.current = true;
+        void llplayCardsExit(llplayMotionCards(screenRef.current)).then(() => {
+          busyRef.current = false;
+          onCancel();
+        });
+      };
+    } else if (phase === 'pick') {
+      shellBackRef.current = () => goPhase('mode');
+    } else if (phase === 'warmup') {
+      shellBackRef.current = () => goPhase('pick');
+    }
+  }, [isLlplay, phase, onCancel, goPhase]);
+
+  const registerShellBack = useCallback((fn: () => void) => {
+    shellBackRef.current = fn;
+  }, []);
+
+  const shellEnterRef = useRef<(() => void) | null>(null);
+  const registerShellEnter = useCallback((fn: () => void) => {
+    shellEnterRef.current = fn;
+  }, []);
+
+  const handleShellBack = useCallback(() => {
+    if (busyRef.current) return;
+    shellBackRef.current();
+  }, []);
+
+  const getFocusables = useCallback(() => {
+    const root = screenRef.current;
+    if (!root) return [];
+    return Array.from(root.querySelectorAll<HTMLElement>(LLPLAY_CARD_SELECTOR));
+  }, []);
+
+  const rubberBandEnabled = isLlplay && (phase === 'pick' || phase === 'warmup');
+  useLlplayVerticalRubberBand(screenRef, scrollBodyRef, rubberBandEnabled);
+
+  const { handlePad, handleEnter: navEnter, handleBack } = useHomeGameBoyNavigation({
+    focusables: getFocusables,
+    onBack: handleShellBack,
+  });
+
+  const handleEnter = useCallback(
+    (el: HTMLButtonElement | null) => {
+      if (phaseRef.current === 'log') {
+        gameBoyPress(el);
+        shellEnterRef.current?.();
+        return;
+      }
+      navEnter(el);
+    },
+    [navEnter],
+  );
+
+  const choiceVariant = isLlplay ? 'llplay' : undefined;
+  const superset = useSupersetFlow({ mode, routine });
+
   if (!profile) return null;
 
+  let content: ReactNode;
+
   if (phase === 'mode') {
-    return (
-      <div className="screen">
-        <Topbar onBack={onCancel} title="Where are you?" />
-        <div className="choice">
-          <ChoiceBtn
-            label="Home"
-            sub="Rings, parallettes, vest, DB/KB"
-            onClick={() => {
-              setMode('home');
-              setPhase('pick');
-            }}
-          />
-          <ChoiceBtn
-            label="Gym"
-            sub="Weights and machines"
-            onClick={() => {
-              setMode('gym');
-              setPhase('pick');
-            }}
-          />
-        </div>
+    const modeChoices = (
+      <div className={isLlplay ? 'llplay-workout__choices' : 'choice'}>
+        <ChoiceBtn
+          variant={choiceVariant}
+          label="Home"
+          sub="Rings, parallettes, vest, DB/KB"
+          onClick={() => {
+            setMode('home');
+            goPhase('pick');
+          }}
+        />
+        <ChoiceBtn
+          variant={choiceVariant}
+          label="Gym"
+          sub="Weights and machines"
+          onClick={() => {
+            setMode('gym');
+            goPhase('pick');
+          }}
+        />
       </div>
     );
-  }
 
-  if (phase === 'pick') {
+    content = isLlplay ? (
+      <div className="auth-llplay__screen-inner llplay-workout" ref={screenRef}>
+        <div className="llplay-workout__body llplay-workout__body--centered">
+          <LlPlayWorkoutLogo />
+          <div className="llplay-workout__center">{modeChoices}</div>
+        </div>
+      </div>
+    ) : (
+      <div className="screen">
+        <Topbar onBack={onCancel} title="Where are you?" />
+        {modeChoices}
+      </div>
+    );
+  } else if (phase === 'pick') {
     const stage = profile.program_stage;
     const inBeginner = stage !== 'standard';
     const modeLabel = mode === 'home' ? 'Home' : 'Gym';
 
-    return (
-      <div className="screen">
-        <Topbar onBack={() => setPhase('mode')} title="What today?" />
-        <p className="muted tiny">
+    const pickBody = (
+      <>
+        {isLlplay ? <LlPlayWorkoutLogo className="llplay-workout__logo" /> : null}
+        {!isLlplay ? (
+          <Topbar onBack={() => goPhase('mode')} title="What today?" />
+        ) : null}
+        <p className={isLlplay ? 'llplay-workout-meta' : 'muted tiny'}>
           {modeLabel}
           {inBeginner ? (
             <>
@@ -161,12 +379,13 @@ export function WorkoutScreen({
           )}
         </p>
         {inBeginner && (
-          <p className="muted tiny">{BEGINNER_ONBOARDING.advanceDetail}</p>
+          <p className={isLlplay ? 'llplay-workout-meta' : 'muted tiny'}>{BEGINNER_ONBOARDING.advanceDetail}</p>
         )}
-        <div className="choice">
+        <div className={isLlplay ? 'llplay-workout__choices' : 'choice'}>
           {sessionPicks.map((row) => (
             <ChoiceBtn
               key={row.id}
+              variant={choiceVariant}
               label={row.label}
               sub={row.sub}
               onClick={() => startSession(row.pick)}
@@ -177,14 +396,14 @@ export function WorkoutScreen({
           <>
             <button
               type="button"
-              className="btn"
+              className={isLlplay ? 'llplay-workout__btn-secondary' : 'btn'}
               onClick={() => setShowBeginnerFullPlan((v) => !v)}
             >
               {showBeginnerFullPlan ? 'Hide full week plan' : 'Full week plan (W1–W3)'}
             </button>
             {showBeginnerFullPlan &&
               (['w1', 'w2', 'w3'] as const).map((week) => (
-                <div key={week} className="schedule-block">
+                <div key={week} className={isLlplay ? 'llplay-workout-plan schedule-block' : 'schedule-block'}>
                   <h3 className="section-title">
                     Week {week.slice(1).toUpperCase()}
                     {stage === week && <span className="chip"> You are here</span>}
@@ -211,8 +430,9 @@ export function WorkoutScreen({
                   </ul>
                 </div>
               ))}
-            <div className="choice">
+            <div className={isLlplay ? 'llplay-workout__choices' : 'choice'}>
               <ChoiceBtn
+                variant={choiceVariant}
                 label={BEGINNER_ONBOARDING.skipLabel}
                 sub="Same week counter — unlocks split/full choices"
                 onClick={() => setSkipSheetOpen(true)}
@@ -228,55 +448,77 @@ export function WorkoutScreen({
             />
           </>
         )}
-      </div>
+      </>
     );
-  }
 
-  if (phase === 'warmup') {
+    content = isLlplay ? (
+      <div className="auth-llplay__screen-inner llplay-workout" ref={screenRef}>
+        <div className="llplay-workout__scroll-body" ref={scrollBodyRef}>
+          {pickBody}
+        </div>
+      </div>
+    ) : (
+      <div className="screen">{pickBody}</div>
+    );
+  } else if (phase === 'warmup') {
     const beginnerStage = profile.program_stage !== 'standard' ? profile.program_stage.toUpperCase() : null;
-    return (
-      <div className="screen">
-        <Topbar
-          onBack={() => setPhase('pick')}
-          title={beginnerStage ? `Warmup · ${mode === 'home' ? 'Home' : 'Gym'} · ${beginnerStage}` : 'Warmup'}
-        />
-        <p className="warmup-intro muted">{JUMP_ROPE_WARMUP_GUIDE}</p>
-        <div className="choice">
+    const warmupTitle = beginnerStage
+      ? `Warmup · ${mode === 'home' ? 'Home' : 'Gym'} · ${beginnerStage}`
+      : 'Warmup';
+
+    const warmupBody = (
+      <>
+        {isLlplay ? <LlPlayWorkoutLogo className="llplay-workout__logo" /> : null}
+        {!isLlplay ? (
+          <Topbar onBack={() => goPhase('pick')} title={warmupTitle} />
+        ) : (
+          <p className="llplay-workout-log-title">{warmupTitle}</p>
+        )}
+        <p className={isLlplay ? 'llplay-workout-intro' : 'warmup-intro muted'}>{JUMP_ROPE_WARMUP_GUIDE}</p>
+        <div className={isLlplay ? 'llplay-workout__choices' : 'choice'}>
           <ChoiceBtn
+            variant={choiceVariant}
             label="Jump rope ~5 min"
             sub="Easy pace before strength"
             onClick={() => {
               setIncludeJumpRope(true);
-              setPhase('log');
+              goPhase('log');
             }}
           />
           <ChoiceBtn
+            variant={choiceVariant}
             label="Skip warmup"
             sub="Go straight to the workout"
             onClick={() => {
               setIncludeJumpRope(false);
-              setPhase('log');
+              goPhase('log');
             }}
           />
         </div>
-      </div>
+      </>
     );
-  }
 
-  const logBack = () => {
-    if (routine === 'mobility' || routine === 'conditioning') {
-      setPhase('pick');
-      return;
-    }
-    if (strengthRoutine(routine)) setPhase('warmup');
-    else setPhase('pick');
-  };
+    content = isLlplay ? (
+      <div className="auth-llplay__screen-inner llplay-workout" ref={screenRef}>
+        <div className="llplay-workout__scroll-body" ref={scrollBodyRef}>
+          {warmupBody}
+        </div>
+      </div>
+    ) : (
+      <div className="screen">{warmupBody}</div>
+    );
+  } else {
+    const logSplitDay = sessionSplitDay ?? 'upper';
+    const llplayLogProps = isLlplay
+      ? {
+          llplay: true as const,
+          onRegisterShellBack: registerShellBack,
+          onRegisterShellEnter: registerShellEnter,
+          screenRef,
+        }
+      : {};
 
-  const superset = useSupersetFlow({ mode, routine });
-  const logSplitDay = sessionSplitDay ?? 'upper';
-
-  if (superset) {
-    return (
+    content = superset ? (
       <SupersetLogPhase
         items={items}
         routine={routine}
@@ -285,20 +527,48 @@ export function WorkoutScreen({
         splitDay={logSplitDay}
         onBack={logBack}
         onFinish={onFinish}
+        {...llplayLogProps}
+      />
+    ) : (
+      <LogPhase
+        items={items}
+        routine={routine}
+        mode={mode}
+        kind={kind}
+        splitDay={logSplitDay}
+        onBack={logBack}
+        onFinish={onFinish}
+        {...llplayLogProps}
       />
     );
   }
 
+  if (!isLlplay) return content;
+
   return (
-    <LogPhase
-      items={items}
-      routine={routine}
-      mode={mode}
-      kind={kind}
-      splitDay={logSplitDay}
-      onBack={logBack}
-      onFinish={onFinish}
-    />
+    <LlPlayRoot>
+      <GameBoyShell
+        onPad={handlePad}
+        onEnter={handleEnter}
+        onBack={handleBack}
+        onStart={() => {
+          if (busyRef.current) return;
+          router.push('/');
+        }}
+        onDetails={() => {
+          if (busyRef.current) return;
+          router.push('/details');
+        }}
+        sessionActive
+        onLogout={() => void signOut()}
+        logTween={lcdLogTween}
+        logLive={lcdLogLive}
+        screenRef={lcdRef}
+        deviceRef={deviceRef}
+      >
+        {content}
+      </GameBoyShell>
+    </LlPlayRoot>
   );
 }
 
@@ -310,6 +580,10 @@ function LogPhase({
   splitDay,
   onBack,
   onFinish,
+  llplay,
+  onRegisterShellBack,
+  onRegisterShellEnter,
+  screenRef,
 }: {
   items: WorkoutItem[];
   routine: WorkoutRoutine;
@@ -318,6 +592,10 @@ function LogPhase({
   splitDay: SplitDay;
   onBack: () => void;
   onFinish: (d: SessionDraft) => void;
+  llplay?: boolean;
+  onRegisterShellBack?: (fn: () => void) => void;
+  onRegisterShellEnter?: (fn: () => void) => void;
+  screenRef?: RefObject<HTMLDivElement | null>;
 }) {
   const { climbExercise } = useApp();
   const [logItems, setLogItems] = useState<WorkoutItem[]>(() => items);
@@ -331,6 +609,42 @@ function LogPhase({
   const [accessoryWeight, setAccessoryWeight] = useState<boolean[]>(() => items.map(() => false));
   const [ceilingDismissed, setCeilingDismissed] = useState<boolean[]>(() => items.map(() => false));
   const [pendingDraft, setPendingDraft] = useState<SessionDraft | null>(null);
+  const [sessionStartedAt] = useState(() => Date.now());
+  const [setCursor, setSetCursor] = useState(0);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const cardBusyRef = useRef(false);
+
+  useLayoutEffect(() => {
+    setSetCursor(0);
+    if (!llplay) return;
+    const card = cardRef.current;
+    if (!card) return;
+    if (idx === 0) {
+      gsap.set(card, { autoAlpha: 1, y: 0 });
+      cardBusyRef.current = false;
+      return;
+    }
+    cardBusyRef.current = true;
+    void llplayCardsEnter([card]).then(() => {
+      cardBusyRef.current = false;
+    });
+  }, [llplay, idx]);
+
+  const changeIdx = useCallback(
+    (next: number) => {
+      if (!llplay) {
+        setIdx(next);
+        return;
+      }
+      if (cardBusyRef.current) return;
+      const card = cardRef.current;
+      cardBusyRef.current = true;
+      void llplayCardsExit(card ? [card] : []).then(() => {
+        setIdx(next);
+      });
+    },
+    [llplay],
+  );
 
   const item = logItems[idx]!;
   const ex = getExercise(item.exerciseId);
@@ -414,8 +728,19 @@ function LogPhase({
       setPendingDraft(draft);
       return;
     }
-    onFinish(draft);
+    onFinish(draftWithElapsedSec(draft, sessionStartedAt));
   }
+
+  const sessionTitle = ROUTINE_LABELS[routine].title;
+  const stepBack = useCallback(() => {
+    if (idx === 0) onBack();
+    else changeIdx(idx - 1);
+  }, [idx, onBack, changeIdx]);
+
+  useEffect(() => {
+    if (!llplay || !onRegisterShellBack) return;
+    onRegisterShellBack(stepBack);
+  }, [llplay, onRegisterShellBack, stepBack]);
 
   if (pendingDraft) {
     const variant = cooldownVariantForMain(pendingDraft.kind, splitDay);
@@ -423,17 +748,111 @@ function LogPhase({
       <CooldownStep
         variant={variant}
         onBack={() => setPendingDraft(null)}
-        onSkip={() => onFinish(pendingDraft)}
-        onComplete={() => onFinish({ ...pendingDraft, cooldownCompleted: true })}
+        onSkip={() => onFinish(draftWithElapsedSec(pendingDraft, sessionStartedAt))}
+        onComplete={() =>
+          onFinish(draftWithElapsedSec({ ...pendingDraft, cooldownCompleted: true }, sessionStartedAt))
+        }
+        screenRef={screenRef}
+        onRegisterPrimary={onRegisterShellEnter}
+        sessionStartedAt={sessionStartedAt}
       />
     );
   }
 
-  const sessionTitle = ROUTINE_LABELS[routine].title;
+  if (llplay) {
+    const isJump = item.exerciseId === 'jump_rope';
+    const isTimed = isJump || item.timed;
+    const lastSet = setCursor >= item.sets - 1;
+    const nextName = !isLast ? logItems[idx + 1]!.name : null;
+    const ceiling = showCeilingPrompt ? (
+      <div className="ceiling-prompt" role="status">
+        <p className="ceiling-prompt-title">{ceilingTitle}</p>
+        <p className="ceiling-prompt-body muted">{ceilingBody}</p>
+        <div className="ceiling-prompt-actions">
+          {ex.track === 'gym' ? (
+            <button type="button" className="btn btn-primary" onClick={bumpGymWeightNow}>
+              Add weight for next sets
+            </button>
+          ) : (
+            <>
+              <button type="button" className="btn btn-primary" onClick={enableAccessoryWeight}>
+                Log extra load (kg)
+              </button>
+              {nextRung && (
+                <button type="button" className="btn" onClick={applyHarderVariation}>
+                  Try: {nextRung.rungName}
+                </button>
+              )}
+            </>
+          )}
+          <button type="button" className="btn" onClick={dismissCeilingPrompt}>
+            Stay here this session
+          </button>
+        </div>
+      </div>
+    ) : null;
+    const completeTimed = () => {
+      setVal(isJump ? 0 : setCursor, item.high);
+      if (isJump || lastSet) {
+        if (isLast) finish();
+        else changeIdx(idx + 1);
+        return;
+      }
+      setSetCursor((c) => c + 1);
+    };
 
-  return (
-    <div className="screen">
-      <Topbar onBack={idx === 0 ? onBack : () => setIdx(idx - 1)} title={`${sessionTitle} · ${idx + 1}/${logItems.length}`} />
+    return (
+      <LlPlayExerciseLog
+        key={`${item.exerciseId}-${idx}-${setCursor}`}
+        screenRef={screenRef}
+        motionRef={cardRef}
+        onBack={stepBack}
+        kicker={isJump ? 'Warmup' : `Rep ${setCursor + 1}/${item.sets}`}
+        title={isJump ? 'Jumping rope' : item.name}
+        exerciseId={item.exerciseId}
+        rungName={item.rungName}
+        jumpRope={isJump}
+        timed={isTimed}
+        jumpAllocatedSec={item.high}
+        onJumpComplete={completeTimed}
+        onTimedComplete={completeTimed}
+        reps={
+          isTimed
+            ? undefined
+            : {
+                current: values[idx]?.[setCursor] ?? 0,
+                target: item.high,
+                onDec: () => setVal(setCursor, (values[idx]?.[setCursor] ?? 0) - 1),
+                onInc: () => setVal(setCursor, (values[idx]?.[setCursor] ?? 0) + 1),
+              }
+        }
+        nextLabel={isLast && lastSet ? 'Finish' : lastSet && nextName ? `Next: ${nextName}` : lastSet ? 'Next exercise' : 'Next set'}
+        onNext={() => {
+          if (cardBusyRef.current) return;
+          if (!lastSet) {
+            setSetCursor((c) => c + 1);
+            return;
+          }
+          if (isLast) finish();
+          else changeIdx(idx + 1);
+        }}
+        ceiling={ceiling}
+        onRegisterPrimary={onRegisterShellEnter}
+        primaryBusy={cardBusyRef}
+        sessionStartedAt={sessionStartedAt}
+      />
+    );
+  }
+
+  const logTitle = `${sessionTitle} · ${idx + 1}/${logItems.length}`;
+
+  const logInner = (
+    <>
+      {llplay ? (
+        <p className="llplay-workout-log-title">{logTitle}</p>
+      ) : (
+        <Topbar onBack={stepBack} title={logTitle} />
+      )}
 
       <div className="progress-dots">
         {logItems.map((_, i) => (
@@ -458,7 +877,7 @@ function LogPhase({
         </div>
       )}
 
-      <div className="exercise-card">
+      <div className="exercise-card" ref={cardRef}>
         <ExerciseGuide exerciseId={item.exerciseId} rungName={item.rungName} />
         {item.exerciseId === 'norwegian_4x4' && (
           <p className="interval-recovery-note muted">
@@ -548,11 +967,21 @@ function LogPhase({
         </div>
       </div>
 
-      <button type="button" className="btn btn-primary btn-block" onClick={isLast ? finish : () => setIdx(idx + 1)}>
+      <button type="button" className="btn btn-primary btn-block" onClick={isLast ? finish : () => changeIdx(idx + 1)}>
         {isLast ? 'Finish workout' : 'Next exercise'}
       </button>
-    </div>
+    </>
   );
+
+  if (llplay) {
+    return (
+      <div className="auth-llplay__screen-inner llplay-workout llplay-workout--log" ref={screenRef}>
+        <div className="llplay-workout-log">{logInner}</div>
+      </div>
+    );
+  }
+
+  return <div className="screen">{logInner}</div>;
 }
 
 function Topbar({ onBack, title }: { onBack: () => void; title: string }) {
@@ -565,10 +994,57 @@ function Topbar({ onBack, title }: { onBack: () => void; title: string }) {
   );
 }
 
-function ChoiceBtn({ label, sub, onClick, disabled }: { label: string; sub: string; onClick: () => void; disabled?: boolean }) {
+function LlPlayWorkoutLogo({ className = '' }: { className?: string }) {
+  return (
+    <Image
+      src="/ui/login/logo-barbell.svg"
+      alt=""
+      width={79}
+      height={79}
+      className={`auth-llplay__logo ${className}`.trim()}
+      priority
+    />
+  );
+}
+
+function ChoiceBtn({
+  label,
+  sub,
+  onClick,
+  disabled,
+  variant,
+}: {
+  label: string;
+  sub: string;
+  onClick: () => void;
+  disabled?: boolean;
+  variant?: 'llplay';
+}) {
+  if (variant === 'llplay') {
+    return (
+      <button
+        type="button"
+        className="llplay-choice-pill nothing-press llplay-card"
+        data-llplay-card
+        onClick={(e) => {
+          nothingTap(e.currentTarget);
+          onClick();
+        }}
+        disabled={disabled}
+      >
+        <span className="llplay-choice-pill__label">{label}</span>
+        <span className="llplay-choice-pill__sub">{sub}</span>
+      </button>
+    );
+  }
+
   return (
     <button type="button" className="choice-btn" onClick={onClick} disabled={disabled}>
-      <span>{label}<br /><span className="sub">{sub}</span></span>
+      <span>
+        {label}
+        <br />
+        <span className="sub">{sub}</span>
+      </span>
       <span style={{ color: 'var(--muted-2)' }}>›</span>
     </button>
   );

@@ -20,9 +20,9 @@ Full agent context: [HANDOFF.md](./HANDOFF.md).
 | Kreatin | Toggle: **5 g** creatine monohydrate for the day |
 | Mobility | Toggle: **5+ min** (or finish **TRAIN → Mobility**) |
 | Training | Auto when strength/cardio workout logged — **excused** when **I’m sick today** is on |
-| Sick | Skips training for the day; lifestyle habits still count (**7/7** max) |
+| Sick | Skips training for the day; lifestyle habits still count (**8/8** max) |
 
-Show progress **7/7** (sick) or **8/8** (well). Partner’s checks under **Bro today**.
+Show progress **8/8** (sick) or **9/9** (well). Partner’s checks under **Bro today**.
 
 **Diet screen:** restrictions (no sugar, caffeine tip), performance/bulk, protein/BMI, creatine guide, protein alternatives overlay, and a short lead on sleep ↔ habits.
 
@@ -43,7 +43,7 @@ Show progress **7/7** (sick) or **8/8** (well). Partner’s checks under **Bro t
 
 ### Data
 
-- `daily_habits(user_id, date, …)` — booleans for sleep, no_sugar, protein_met, water, steps, creatine, mobility_met, sick; `protein_g` + RLS
+- `daily_habits(user_id, date, …)` — sleep, no_sugar, protein_met, `protein_g`, calories_met, `calories_kcal`, water, steps, creatine, mobility_met, sick + RLS
 - Same Supabase project as today
 
 ### Stack (with migration)
@@ -58,7 +58,7 @@ Next.js in-place, Tailwind tokens, GSAP (light), Supabase SSR — see HANDOFF.
 - `tools/cosmetic-gen/` / Gemini pipeline
 - Locker, IRON shop, Pro Mode escalation UI, fire vortex, real sprites
 - Achievement unlock fanfare (engine may stay; UI hidden via `MVP_MODE`)
-- Nutrition tracking beyond yes/no protein
+- Full food database / macro tracking beyond protein g + kcal quick-add
 - PWA manifest polish (after habits feel good)
 
 ---

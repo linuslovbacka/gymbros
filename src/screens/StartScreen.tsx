@@ -1,6 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
+import type { RefObject } from 'react';
+import { useCallback, useRef } from 'react';
 import { useApp } from '@/state/store';
 import { Avatar, derivePhysiqueTier } from '@/components/Avatar';
 import { AvatarStage } from '@/components/AvatarStage';
@@ -8,6 +11,7 @@ import { ProModeHeader } from '@/components/ProModeHeader';
 import { DailyChecks } from '@/components/DailyChecks';
 import { HabitTimeline } from '@/components/HabitTimeline';
 import { useHabitHistory } from '@/hooks/useHabitHistory';
+import { useLlplayVerticalRubberBand } from '@/hooks/useLlplayVerticalRubberBand';
 import { getCosmetic } from '@/content/cosmetics';
 import { MVP_MODE } from '@/lib/mvp';
 import type { Profile } from '@/state/types';
@@ -49,6 +53,74 @@ function Fighter({ p, opponentIron, onSelect }: { p: Profile; opponentIron: numb
   );
 }
 
+function MvpLlPlayHome({
+  profile,
+  partner,
+  historyDays,
+  historyLoading,
+  sickToday,
+  onTrain,
+  layerRef,
+  scrollBodyRef,
+  layerZ,
+}: {
+  profile: Profile;
+  partner: Profile | null | undefined;
+  historyDays: Parameters<typeof HabitTimeline>[0]['days'];
+  historyLoading: boolean;
+  sickToday: boolean;
+  onTrain: () => void;
+  layerRef?: RefObject<HTMLDivElement | null>;
+  scrollBodyRef?: RefObject<HTMLDivElement | null>;
+  layerZ?: number;
+}) {
+  const localScreenRef = useRef<HTMLDivElement>(null);
+  const localScrollRef = useRef<HTMLDivElement>(null);
+  const screenRef = layerRef ?? localScreenRef;
+  const bodyRef = scrollBodyRef ?? localScrollRef;
+  const checksRef = useRef<HTMLDivElement>(null);
+
+  useLlplayVerticalRubberBand(screenRef, bodyRef, true);
+
+  const handleTrain = useCallback(() => {
+    if (sickToday) return;
+    onTrain();
+  }, [sickToday, onTrain]);
+
+  return (
+    <div
+      className={`auth-llplay__screen-inner llplay-home llplay-lcd-layer${layerZ === 2 ? ' is-front' : ''}`}
+      ref={screenRef}
+      style={layerZ != null ? { zIndex: layerZ } : undefined}
+    >
+      <div className="llplay-home__scroll-body" ref={bodyRef}>
+        <Image
+          src="/ui/login/logo-barbell.svg"
+          alt=""
+          width={79}
+          height={79}
+          className="auth-llplay__logo llplay-home__logo"
+          priority
+        />
+        <p className="llplay-home__days">D{profile.days_trained}</p>
+        <HabitTimeline
+          days={historyDays}
+          loading={historyLoading}
+          hideLegend
+          variant="llplay"
+          centerOnToday
+        />
+        <DailyChecks
+          variant="llplay"
+          partnerProfile={partner}
+          onTrain={handleTrain}
+          containerRef={checksRef}
+        />
+      </div>
+    </div>
+  );
+}
+
 function RestTokens({ count }: { count: number }) {
   return (
     <div className="rest-tokens" title="Rest tokens — buffer before your gear rusts">
@@ -63,10 +135,18 @@ export function StartScreen({
   onTrain,
   onLocker,
   onSchedule,
+  framed = false,
+  layerRef,
+  scrollBodyRef,
+  layerZ,
 }: {
   onTrain: () => void;
   onLocker?: () => void;
   onSchedule?: () => void;
+  framed?: boolean;
+  layerRef?: RefObject<HTMLDivElement | null>;
+  scrollBodyRef?: RefObject<HTMLDivElement | null>;
+  layerZ?: number;
 }) {
   const { user, profile, partner, habitsToday, pressProMode, signOut } = useApp();
   const { days: historyDays, loading: historyLoading } = useHabitHistory(
@@ -80,52 +160,17 @@ export function StartScreen({
   const sickToday = habitsToday?.sick ?? false;
   if (MVP_MODE) {
     return (
-      <div className="screen start-mvp">
-        <div className="topbar">
-          <div className="chips">
-            <span className="chip">{profile.days_trained} days trained</span>
-          </div>
-          <div className="row" style={{ gap: 8, marginLeft: 'auto' }}>
-            <Link className="back" href="/diet">
-              Diet
-            </Link>
-            {onSchedule && (
-              <Link className="back" href="/schedule">
-                Schedule
-              </Link>
-            )}
-            <button className="back" type="button" onClick={() => void signOut()}>
-              Sign out
-            </button>
-          </div>
-        </div>
-
-        <HabitTimeline
-          days={historyDays}
-          loading={historyLoading}
-          compact
-          hideLegend
-          title="Your progress"
-        />
-
-        <DailyChecks partnerProfile={partner} />
-
-        {sickToday ? (
-          <p className="sick-train-note muted start-mvp-footer">
-            Rest day — diet habits still count. Turn off &quot;I&apos;m sick&quot; when you&apos;re ready to train
-            again.
-          </p>
-        ) : (
-          <button
-            type="button"
-            className="btn btn-primary btn-block btn-train-nothing start-mvp-footer"
-            onClick={onTrain}
-            aria-label="Train"
-          >
-            TRAIN
-          </button>
-        )}
-      </div>
+      <MvpLlPlayHome
+        profile={profile}
+        partner={partner}
+        historyDays={historyDays}
+        historyLoading={historyLoading}
+        sickToday={sickToday}
+        onTrain={onTrain}
+        layerRef={framed ? layerRef : undefined}
+        scrollBodyRef={framed ? scrollBodyRef : undefined}
+        layerZ={framed ? layerZ : undefined}
+      />
     );
   }
 

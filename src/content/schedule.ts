@@ -11,7 +11,11 @@ import {
   type ExerciseState,
   type ProgramStage,
   type WorkoutItem,
+  BEGINNER_ONBOARDING,
 } from './workouts';
+import { buildRoutineWorkout, ROUTINE_LABELS, type WorkoutRoutine } from './routines';
+import { canShowGluteRoutine } from '@/lib/personal-routines';
+import type { Profile } from '@/state/types';
 
 export interface TodayPreviewOptions {
   mode: Mode;
@@ -53,6 +57,117 @@ export function describeFullSession(opts: BuildOptions): WorkoutItem[] {
   return buildWorkout(opts);
 }
 
+export type ScheduleProgramRow =
+  | { kind: 'beginner'; sub: string }
+  | { kind: 'block'; title: string; sub: string };
+
+export type ScheduleModeProgramCard = {
+  mode: Mode;
+  heading: string;
+  rows: ScheduleProgramRow[];
+};
+
+function joinNames(names: string[], max = 5): string {
+  if (names.length === 0) return '';
+  if (names.length <= max) return names.join(' · ');
+  return [...names.slice(0, max), `+${names.length - max} more`].join(' · ');
+}
+
+function beginnerStageFromProgram(stage: ProgramStage): BeginnerStage {
+  if (stage === 'w2' || stage === 'w3') return stage;
+  return 'w1';
+}
+
+function beginnerSubline(stage: ProgramStage, mode: Mode): string {
+  const rampStage = stage !== 'standard' ? stage : 'w1';
+  const items = describeBeginnerWeek(beginnerStageFromProgram(rampStage), mode);
+  const names = joinNames(
+    items.slice(0, 2).map((it) => it.name),
+    2,
+  );
+  return names || BEGINNER_ONBOARDING.advanceDetail;
+}
+
+function buildOpts(profile: Profile, mode: Mode): BuildOptions & { mode: Mode } {
+  return {
+    mode,
+    stage: profile.program_stage,
+    state: profile.exercise_state ?? {},
+    kind: 'split',
+    splitDay: 'upper',
+  };
+}
+
+function extraRoutineRows(
+  profile: Profile,
+  mode: Mode,
+  showGlutes: boolean,
+): ScheduleProgramRow[] {
+  const extras: Exclude<WorkoutRoutine, 'main'>[] = showGlutes
+    ? ['skills', 'glutes', 'mobility', 'conditioning']
+    : ['skills', 'mobility', 'conditioning'];
+  const opts = buildOpts(profile, mode);
+
+  return extras.map((id) => {
+    const { title } = ROUTINE_LABELS[id];
+    const names = joinNames(buildRoutineWorkout(id, opts).map((it) => it.name), 8);
+    return { kind: 'block' as const, title, sub: names };
+  });
+}
+
+function modeProgramCard(profile: Profile, mode: Mode, showGlutes: boolean): ScheduleModeProgramCard {
+  const opts = buildOpts(profile, mode);
+  const stage = profile.program_stage;
+  const rows: ScheduleProgramRow[] = [];
+
+  rows.push({
+    kind: 'beginner',
+    sub: beginnerSubline(stage, mode),
+  });
+
+  if (mode === 'gym') {
+    const fullItems = buildWorkout({
+      ...opts,
+      kind: 'full',
+      stage: stage === 'standard' ? 'standard' : stage,
+    });
+    rows.push({
+      kind: 'block',
+      title: 'Full body',
+      sub: joinNames(fullItems.map((it) => it.name), 12),
+    });
+  }
+
+  for (const day of SPLIT_DAY_ORDER) {
+    const split = describeSplitDay(mode, day);
+    rows.push({
+      kind: 'block',
+      title: split.label,
+      sub: joinNames(split.exercises, 12),
+    });
+  }
+
+  rows.push(...extraRoutineRows(profile, mode, showGlutes));
+
+  return {
+    mode,
+    heading: mode === 'home' ? 'Home Gym' : 'Gym',
+    rows,
+  };
+}
+
+/** Reference program lists for Schedule (llplay) — live exercise names, no placeholders. */
+export function buildScheduleProgramOverview(
+  profile: Profile,
+  userId?: string,
+): { home: ScheduleModeProgramCard; gym: ScheduleModeProgramCard } {
+  const showGlutes = canShowGluteRoutine(userId);
+  return {
+    home: modeProgramCard(profile, 'home', showGlutes),
+    gym: modeProgramCard(profile, 'gym', showGlutes),
+  };
+}
+
 export {
   SPLIT_DAY_ORDER,
   nextSplitDay,
@@ -65,6 +180,10 @@ export {
 /** Schedule — how TRAIN options fit the week (prose, not a menu list). */
 export const SCHEDULE_TRAIN_LEAD =
   'Muscle grows when you train consistently, eat enough protein, and slowly do a bit more — heavier, harder, or more reps with the same form. Hit your Main sessions, progress when sets feel solid, and use rest or lighter days when recovery lags instead of maxing out every time.';
+
+/** LL PLAY Details — Schedule tab general block (Figma 1898:5830). */
+export const SCHEDULE_GENERAL_LEAD =
+  'Random hard days don’t build muscle — repeated overload on the basics does. Protect recovery and protein first, then show up for Main and add weight or difficulty only when your logged sets say you’re ready.';
 
 /** Static reference — when to train vs rest (Schedule screen). */
 export const SICK_TRAINING_GUIDE = {

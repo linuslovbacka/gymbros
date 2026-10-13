@@ -1,7 +1,5 @@
-'use client';
-
-import { DietScreen } from '@/screens/DietScreen';
+import { redirect } from 'next/navigation';
 
 export default function DietPage() {
-  return <DietScreen />;
+  redirect('/details?tab=diet');
 }

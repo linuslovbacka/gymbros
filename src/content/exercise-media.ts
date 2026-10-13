@@ -361,6 +361,16 @@ export function resolveExerciseMedia(exerciseId: string, rungName?: string): Exe
 
 export const VIDEO_POSTER_FALLBACK = '/ui/video-poster-fallback.svg';
 
+/** Shared cat until per-exercise art exists. Fill `ILLUSTRATIONS` later. */
+const EXERCISE_PLACEHOLDER = '/ui/exercises/placeholder.svg';
+const ILLUSTRATIONS: Record<string, string> = {
+  jump_rope: '/ui/exercises/jump_rope.png',
+};
+
+export function illustrationForExercise(exerciseId: string): string {
+  return ILLUSTRATIONS[exerciseId] ?? EXERCISE_PLACEHOLDER;
+}
+
 /** Local fallback when YouTube has no real thumbnail (404 still returns a 120×90 grey JPEG). */
 export function isYoutubePlaceholderPoster(naturalWidth: number, naturalHeight: number): boolean {
   return naturalWidth > 0 && naturalWidth <= 120 && naturalHeight <= 90;

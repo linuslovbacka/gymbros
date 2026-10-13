@@ -13,6 +13,9 @@ export interface DailyHabitsRow {
   protein_met: boolean;
   /** Grams logged today (diet calculator). */
   protein_g: number;
+  calories_met: boolean;
+  /** Kilocalories logged today. */
+  calories_kcal: number;
   water_met: boolean;
   steps_met: boolean;
   sleep_met: boolean;
@@ -27,6 +30,8 @@ export type HabitsToday = Pick<
   | 'no_sugar'
   | 'protein_met'
   | 'protein_g'
+  | 'calories_met'
+  | 'calories_kcal'
   | 'water_met'
   | 'steps_met'
   | 'sleep_met'
@@ -61,6 +66,7 @@ export interface Profile {
   days_trained: number;
   pr_count: number;
   protein_target_g?: number;
+  kcal_target?: number;
   body_weight_kg?: number;
   body_height_cm?: number;
   maintenance_mode?: boolean;
@@ -91,6 +97,7 @@ export const WRITABLE_PROFILE_COLUMNS = [
   'pr_count',
   'display_name',
   'protein_target_g',
+  'kcal_target',
   'body_weight_kg',
   'body_height_cm',
   'maintenance_mode',

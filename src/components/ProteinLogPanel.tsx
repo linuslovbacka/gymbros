@@ -1,26 +1,145 @@
 'use client';
 
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { proteinTargetG } from '@/content/diet';
 import { useApp } from '@/state/store';
 import type { Profile } from '@/state/types';
 
 const QUICK_ADD_G = [10, 20, 30] as const;
 
+function useLlplayQuickAddFit(actionsRef: React.RefObject<HTMLDivElement | null>, deps: unknown[]) {
+  useLayoutEffect(() => {
+    const row = actionsRef.current;
+    if (!row) return;
+
+    function fitQuickAdds() {
+      const row = actionsRef.current;
+      if (!row) return;
+      const quickGroup = row.querySelector<HTMLElement>('.protein-llplay-quick-group');
+      const custom = row.querySelector<HTMLElement>('.protein-llplay-custom');
+      if (!quickGroup || !custom) return;
+
+      const chips = [...quickGroup.querySelectorAll<HTMLElement>('[data-quick]')].sort(
+        (a, b) => Number(b.dataset.quick) - Number(a.dataset.quick),
+      );
+      for (const chip of chips) {
+        chip.style.display = '';
+      }
+      const gap = 4;
+      for (const chip of chips) {
+        const used = quickGroup.scrollWidth + custom.offsetWidth + gap;
+        if (used <= row.clientWidth + 1) break;
+        chip.style.display = 'none';
+      }
+    }
+
+    fitQuickAdds();
+    const ro = new ResizeObserver(fitQuickAdds);
+    ro.observe(row);
+    return () => ro.disconnect();
+  }, deps);
+}
+
+function ProteinLogPanelLlplay({
+  target,
+  logged,
+  met,
+  gramsInput,
+  setGramsInput,
+  addFromPicker,
+  addProteinGrams,
+}: {
+  target: number;
+  logged: number;
+  met: boolean;
+  gramsInput: string;
+  setGramsInput: (v: string) => void;
+  addFromPicker: () => void;
+  addProteinGrams: (g: number) => void | Promise<void>;
+}) {
+  const actionsRef = useRef<HTMLDivElement>(null);
+  useLlplayQuickAddFit(actionsRef, [gramsInput, target, logged]);
+
+  const belowGoal = target > 0 && logged < target;
+  const loggedClass = belowGoal ? 'protein-llplay-logged is-below-goal' : 'protein-llplay-logged';
+
+  return (
+    <div
+      className={`protein-log protein-log--llplay llplay-card${met ? ' protein-log--done' : ''}`}
+      data-llplay-card
+      tabIndex={0}
+    >
+      {met ? (
+        <span className="daily-check-llplay-dot" aria-hidden="true" data-done="true" />
+      ) : (
+        <span className="protein-llplay-dot protein-llplay-dot--open" aria-hidden="true" />
+      )}
+      <div className="protein-llplay-body">
+        <div className="protein-llplay-head">
+          <span className="protein-llplay-title">Protein</span>
+          <p className="protein-llplay-nums" aria-live="polite">
+            <span className={loggedClass}>{logged}</span>
+            <span className="protein-llplay-target">/{target}g</span>
+          </p>
+        </div>
+        <div className="protein-llplay-actions" ref={actionsRef}>
+          <div className="protein-llplay-quick-group">
+            {QUICK_ADD_G.map((g) => (
+              <button
+                key={g}
+                type="button"
+                data-quick={g}
+                className="protein-llplay-chip nothing-press"
+                onClick={() => void addProteinGrams(g)}
+              >
+                +{g}
+              </button>
+            ))}
+          </div>
+          <div className="protein-llplay-custom">
+            <label className="protein-llplay-custom-field">
+              <span className="protein-llplay-input-prefix" aria-hidden="true">
+                +
+              </span>
+              <input
+                className="protein-llplay-input"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={gramsInput}
+                aria-label="Grams to add"
+                onChange={(e) => setGramsInput(e.target.value.replace(/\D/g, '').slice(0, 3))}
+                onBlur={() => {
+                  const g = Number.parseInt(gramsInput, 10);
+                  if (!Number.isFinite(g) || g <= 0) setGramsInput('30');
+                }}
+              />
+            </label>
+            <button type="button" className="protein-llplay-add nothing-press" onClick={() => void addFromPicker()}>
+              add
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ProteinLogPanel({
   profile,
   variant = 'full',
 }: {
   profile: Profile;
-  variant?: 'full' | 'home';
+  variant?: 'full' | 'home' | 'llplay';
 }) {
+  const isHome = variant === 'home';
   const { habitsToday, addProteinGrams, resetProteinLog } = useApp();
   const target = proteinTargetG(profile);
   const logged = habitsToday?.protein_g ?? 0;
   const met = habitsToday?.protein_met ?? false;
   const pct = target > 0 ? Math.min(100, Math.round((logged / target) * 100)) : 0;
 
-  const [gramsInput, setGramsInput] = useState('25');
+  const [gramsInput, setGramsInput] = useState(variant === 'llplay' ? '30' : '25');
 
   async function addFromPicker() {
     const g = Number.parseInt(gramsInput, 10);
@@ -28,15 +147,26 @@ export function ProteinLogPanel({
     await addProteinGrams(g);
   }
 
-  const rootClass =
-    variant === 'home'
-      ? `protein-log protein-log--home${met ? ' protein-log--done' : ''}`
-      : 'protein-calc';
+  if (variant === 'llplay') {
+    return (
+      <ProteinLogPanelLlplay
+        target={target}
+        logged={logged}
+        met={met}
+        gramsInput={gramsInput}
+        setGramsInput={setGramsInput}
+        addFromPicker={() => void addFromPicker()}
+        addProteinGrams={addProteinGrams}
+      />
+    );
+  }
+
+  const rootClass = isHome ? `protein-log protein-log--home${met ? ' protein-log--done' : ''}` : 'protein-calc';
 
   return (
     <div className={rootClass}>
-      <div className={variant === 'home' ? 'protein-log-summary' : 'protein-calc-summary'}>
-        {variant === 'home' && (
+      <div className={isHome ? 'protein-log-summary' : 'protein-calc-summary'}>
+        {isHome && (
           <div className="protein-log-head">
             <div className="protein-log-head-main">
               <span className={`daily-check-mark protein-log-mark${met ? ' done' : ''}`} aria-hidden="true">
@@ -76,7 +206,7 @@ export function ProteinLogPanel({
           <span className="protein-calc-slash muted">/</span>
           <span className="protein-calc-target">{target} g</span>
         </div>
-        {variant !== 'home' && met && (
+        {!isHome && met && (
           <p className="protein-calc-caption muted">Target hit for today.</p>
         )}
         <div className="protein-calc-bar" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
@@ -84,7 +214,7 @@ export function ProteinLogPanel({
         </div>
       </div>
 
-      <div className={`protein-log-actions${variant === 'home' ? ' protein-log-actions--home' : ''}`}>
+      <div className={`protein-log-actions${isHome ? ' protein-log-actions--home' : ''}`}>
         {QUICK_ADD_G.map((g) => (
           <button
             key={g}
@@ -118,7 +248,7 @@ export function ProteinLogPanel({
         </button>
       </div>
 
-      {variant !== 'home' && logged > 0 && (
+      {!isHome && logged > 0 && (
         <button type="button" className="btn protein-calc-reset" onClick={() => void resetProteinLog()}>
           Reset today
         </button>

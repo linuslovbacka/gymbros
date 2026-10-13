@@ -4,7 +4,7 @@ import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useApp } from '@/state/store';
 import { UpdatePasswordScreen } from '@/screens/UpdatePasswordScreen';
-import { LoadingGate } from '@/components/loading-gate';
+import { LlPlayLoadingGate } from '@/components/LlPlayLoadingGate';
 
 function UpdatePasswordContent() {
   const { ready, user, passwordRecovery } = useApp();
@@ -20,15 +20,25 @@ function UpdatePasswordContent() {
     else if (!allowReset) router.replace('/');
   }, [ready, user, allowReset, router]);
 
-  if (!ready) return <LoadingGate />;
-  if (!user || !allowReset) return <LoadingGate message="Redirecting…" />;
+  const blocking = !ready || !user || !allowReset;
+  const message = ready ? 'Redirecting…' : undefined;
 
-  return <UpdatePasswordScreen />;
+  return (
+    <LlPlayLoadingGate blocking={blocking} message={message}>
+      <UpdatePasswordScreen />
+    </LlPlayLoadingGate>
+  );
 }
 
 export default function UpdatePasswordPage() {
   return (
-    <Suspense fallback={<LoadingGate />}>
+    <Suspense
+      fallback={
+        <LlPlayLoadingGate blocking message={undefined}>
+          {null}
+        </LlPlayLoadingGate>
+      }
+    >
       <UpdatePasswordContent />
     </Suspense>
   );
